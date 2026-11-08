@@ -1,147 +1,223 @@
-# IEM College Admission Portal — Working Prototype
+# IEM Admission Portal
 
-A full-stack admission portal prototype built from the supplied IEM wireframe and starter-kit datasets. It includes a public college site, applicant registration/login, a multi-step draft application, private document uploads, application tracking, role-based admissions/admin workflows, programme management, user management, CSV reporting, notifications and an audit trail.
+A full-stack web application for IEM admissions, with a public institutional website, applicant portal, entrance-exam information and a role-protected administration portal.
 
-> **Data integrity notice:** The supplied CSV/JSON records are synthetic demo data. Faculty names, programmes, eligibility, fees, event dates, institutional claims, contact information and any statistics must be verified and replaced with approved official IEM information before public launch. The UI labels sample information. Do not use this prototype to make automated admission decisions.
+<blockquote>
+  <strong>Live website:</strong> <a href="https://iem-admission-portal-1.onrender.com/">https://iem-admission-portal-1.onrender.com/</a>
+</blockquote>
 
-## Requirements
-- Node.js 22.5 or newer (uses Node.js built-in `node:sqlite`; no Visual Studio C++ build tools required)
+## Scan to open the live portal
+
+The QR image supplied for this release is included below. The direct deployment URL is provided as the canonical access link.
+
+[![IEM Admission Portal QR code](public/assets/iem-admission-portal-qr.png)](https://iem-admission-portal-1.onrender.com/)
+
+**Direct link:** [https://iem-admission-portal-1.onrender.com/](https://iem-admission-portal-1.onrender.com/)
+
+ > The QR image is bundled locally at `public/assets/iem-admission-portal-qr.png` and included exactly as supplied. If the QR scan does not resolve, use the direct website link above.
+
+## Overview
+
+The portal brings the public-facing IEM information site and admission workflows into one application. Visitors can explore institutional information, programmes, faculty, fees, campus information, Gymkhana and IEMJEE/IEMCET information. Applicants can register, sign in, complete an admission application, upload supporting documents, save drafts and track application progress. Authorised staff can review applications and manage admissions content.
+
+## Main features
+
+### Public IEM website
+- Public homepage is the default landing page at `/`.
+- Navigation for About IEM, Courses, Faculty, Fees, Campus, Gymkhana and IEMJEE/IEMCET.
+- Five locally bundled campus photographs displayed in an automatically rotating carousel (5-second interval).
+- Separate locally bundled IEM and UEM logo assets.
+- Programme catalogue covering the configured undergraduate, postgraduate and research programme groups.
+- Fee information grouped by programme family, with tuition and examination fees configured per semester.
+- Faculty and HOD directory, institutional information, events and student-club content.
+- Dedicated IEMJEE/IEMCET information and registration hand-off.
+
+### Student / applicant portal
+- Student registration and sign-in.
+- Registration accepts a syntactically valid email address; Gmail-only restrictions and email OTP are intentionally disabled.
+- Indian mobile number format: exactly 10 digits, starting with 6, 7, 8 or 9. This is format validation only; it does not verify number ownership.
+- Password policy: at least 8 characters, including uppercase, lowercase and a number.
+- Multi-section admission application for personal, academic, programme and guardian details.
+- Save-as-draft and continue an application later.
+- Supporting document upload with file-type and size validation.
+- Application submission with a generated application reference.
+- Student dashboard with application progress, status and notifications.
+
+### Admin / admissions portal
+- Separate administrator/staff sign-in and role-based access control.
+- Application review, document review and status updates.
+- Programme, fee, faculty, event and website-content management.
+- Reports, application summaries, CSV export and audit information where enabled by the configured role.
+- Public student registration does not grant administrator privileges.
+
+### Entrance examination information
+- Dedicated IEMJEE / IEMCET navigation and information page.
+- Examination-format and preparation information.
+- Login-gated hand-off to the official examination portal: <https://exam.iem.edu.in/>.
+
+### Gymkhana
+- Separate Gymkhana section for student clubs, communities, events and campus activities.
+- The existing Gymkhana presentation is retained independently from the academic and admission sections.
+
+## Technology stack
+
+- **Runtime:** Node.js 22.5+
+- **Backend:** Express.js
+- **Frontend:** HTML, CSS and browser JavaScript
+- **Database:** SQLite using Node.js built-in `node:sqlite`
+- **Authentication:** bcrypt password hashing and signed server-side sessions
+- **Uploads:** Multer with file-type/size restrictions and authenticated document access
+- **Security middleware:** Helmet and express-rate-limit
+
+The app is intentionally lightweight and does not require a separate frontend build step.
+
+## Project structure
+
+```text
+swe/
+├── src/                  # Express server, database and seed logic
+├── public/               # Website HTML, CSS, JavaScript and static assets
+│   └── assets/            # IEM/UEM logos, campus images and portal QR code
+├── dataset/               # Programme, faculty, fee and content seed data
+├── data/                  # SQLite database (created at runtime)
+├── uploads/               # Private applicant uploads
+├── docs/                  # Project documentation and source notes
+├── test/                  # Automated tests
+├── .env.example           # Environment-variable template
+├── package.json
+├── START-IEM.ps1          # Windows one-command launcher
+└── README.md
+```
+
+## Run locally
+
+### Requirements
+- Node.js 22.5 or newer
 - npm
 
-## Local setup
+### Install and start
+
 ```bash
 npm install
-# Windows PowerShell: Copy-Item .env.example .env
-# Windows CMD: copy .env.example .env
-# macOS/Linux: cp .env.example .env
-npm run seed
+```
+
+Create a local `.env` from `.env.example` and set a unique `SESSION_SECRET`.
+
+**Windows PowerShell:**
+```powershell
+Copy-Item .env.example .env
 npm start
 ```
-Open http://localhost:4000. Use the public website navigation for college information; use **Student Login** or **Apply Now** for the separate applicant/admin portal experience.
 
-The SQLite database is created at `data/iem.sqlite` by default using Node.js built-in SQLite. This avoids native `better-sqlite3` compilation and the Visual Studio C++ workload on Windows. The seed script is idempotent for the supplied catalogue data. Uploaded documents are stored under `uploads/` and are served only through an authenticated ownership/role-checked download endpoint.
+**macOS / Linux:**
+```bash
+cp .env.example .env
+npm start
+```
 
-## Account roles and administrator hierarchy
-- Every new registration is assigned the Student/Applicant role by default.
-- `shlokagarwal64@gmail.com` is the designated Super Admin. Register with this email and choose your own password; this account alone can grant/revoke Admin or Admissions Officer access and disable other accounts. Its role cannot be changed or its account disabled from the dashboard.
-- `mmoupiya1806@gmail.com`, `iamsubham019@gmail.com` and `snigdhasaha48@gmail.com` are assigned Admin access when they register and choose their own passwords.
-- Admins can manage admissions operations but cannot manage user roles or appoint other administrators.
-- The prototype currently maps privileges by the exact email address at registration. A one-time database bootstrap also promotes any of these four accounts that already exist when the updated server first starts. It does not yet verify mailbox ownership. Before any real deployment, add email OTP/verification and provision privileged accounts only after verified ownership.
+Open <http://localhost:4000/>.
 
-## Demo accounts
-| Role | Email | Password |
-|---|---|---|
-| Administrator | `admin@iem.demo` | `Admin@12345` |
-| Admissions officer | `officer@iem.demo` | `Officer@12345` |
-| Applicant | `student@iem.demo` | `Student@12345` |
+For the Windows one-command setup, open the `swe` folder in PowerShell and run:
 
-Demo accounts are created only when `NODE_ENV` is not `production`. They are not created in production. Provision the first production administrator through a controlled deployment/database bootstrap process. Demo passwords are for local testing only.
-
-## Main workflows
-### Applicant
-1. Register a new account or sign in with the demo applicant.
-2. Open **My Application** and complete personal, academic, programme and guardian sections.
-3. Save drafts and resume later; drafts are persisted in SQLite.
-4. Upload 10th marksheet, 12th marksheet and photo (required to submit). PDF/JPG/PNG only, 5 MB maximum by default.
-5. Accept the declaration and submit. The application receives a unique application ID.
-6. Track status history and notifications in the applicant dashboard.
-
-### Admissions staff / administrator
-1. Sign in using the officer or administrator account.
-2. Review submitted applications and applicant details.
-3. Open private documents, update document verification and add notes.
-4. Update application status; applicants receive an in-portal notification.
-5. Administrators can manage programmes, view the audit trail and export application CSV reports. Only the Super Admin can grant/revoke privileged roles or disable accounts.
-
-## Configuration
-See `.env.example`:
-- `PORT`: HTTP port (default 4000)
-- `SESSION_SECRET`: HMAC signing secret (set a unique random 32+ character value)
-- `DATABASE_PATH`: SQLite file path
-- `UPLOAD_DIR`: private document storage path
-- `MAX_UPLOAD_MB`: per-file limit (default 5)
-
-For production, use HTTPS, a managed database and private object storage (e.g. S3/GCS) behind a storage adapter, email/SMS provider, institutional password reset, backup/retention policies, security review and deployment-specific secrets. SQLite and local disk are intended for this runnable prototype, not a multi-instance production deployment. Add CSRF protection appropriate to the deployment topology and a persistent session cleanup job before production. The current forgot-password UI directs users to an administrator; it does not send reset emails.
-
-## Data import
-The source dataset is preserved in `dataset/`:
-- `programs.csv`
-- `faculty.csv`
-- `events.csv`
-- `applications.csv` (synthetic sample records retained as reference; no real applicant accounts are created from this file)
-- `fee_structure.csv`
-- `college_content.json`
-
-`npm run seed` imports programmes, faculty, events, fees and college profile metadata. Re-running the seed refreshes these sample catalogue rows. Sample applications are intentionally not seeded as real user accounts because their credentials do not exist and the records contain synthetic identities.
-
-## Security notes / limitations
-- Passwords are hashed with bcrypt; sessions are random opaque IDs signed with HMAC and stored server-side, using HttpOnly/SameSite cookies.
-- Login is rate-limited; server-side role checks protect all admin routes.
-- Applicants can access only their own application and documents. Staff access is role-gated.
-- Uploads have MIME allow-list and size limits, generated filenames and authenticated download routes.
-- Application fields are validated server-side; SQL uses parameterized statements.
-- This is a prototype: have it independently security-tested before handling real applicant data. Add CSRF controls, password reset delivery, account verification, retention/deletion workflows, malware scanning, object-storage encryption, observability and formal RBAC/permission policies before production.
-
-## Quality checks
-Run `npm test` for automated API/security smoke tests and `npm start` to run locally. The project is intentionally dependency-light and uses server-rendered static HTML/CSS/JS with an Express JSON API and SQLite persistence to keep setup simple.
-
-## One-command Windows setup
-Extract this ZIP, open the extracted `swe` folder in File Explorer, then run this single PowerShell command in its address-bar terminal:
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\START-IEM.ps1
 ```
-The script checks the project version and Node.js requirement, removes stale `node_modules`/lockfile, installs dependencies, seeds SQLite, and starts the server. It stops immediately if any step fails. This updated build uses Node's built-in `node:sqlite` and does not depend on `better-sqlite3` or Visual Studio C++ Build Tools. Node.js 22.5+ is required.
 
+The application uses port `4000` locally by default. In a hosting environment, it reads the platform-provided `PORT`.
 
-## Official content enrichment
-The public homepage includes sourced programme and fee information, faculty profiles, student clubs, events, hostel information, placement outcomes and notices. See `docs/official-content-sources.md` for provenance and accuracy caveats. Verify session-specific fees, eligibility, faculty teaching allocations, event editions and hostel vacancies with IEM before production publication.
+### Seed data
 
+To initialise or refresh the configured programme, faculty, event, fee and institutional content catalogue:
 
-### Faculty directory
-The public site now has a featured faculty preview and a separate `#faculty-directory` page. It includes selected staff from the official IEM directory, roles, departments, research areas, available teaching subjects and links to official profiles. Some directory entries do not expose individual course lists in the public listing; those are explicitly marked for verification rather than inferred. Hostel locations and facility descriptions are sourced from the institutional NAAC self-study report; verify current availability directly with IEM.
+```bash
+npm run seed
+```
 
+Review the seed script and dataset before running it against a database containing live applicant records. Keep a backup before any production data operation.
 
-## Admin dashboard fixes
-- Admin hash routing is now evaluated before public anchor routing, so Programs and Fees stay in the admin shell.
-- Website Content now uses structured forms for college profile, scholarships, placements and announcements; faculty and event directories use editable cards instead of raw JSON textareas.
-- Reports now include live status bars and a donut-style graphical outcome chart, derived from the database overview endpoint.
-- The interface changes are client-side and retain existing authenticated API routes. Verify permissions with Super Admin and staff test accounts.
+## Environment variables
 
-The Windows launcher now skips `npm install` when dependencies are already present; it only installs or repairs them when required. It no longer deletes `node_modules` or the lockfile on every launch.
+| Variable | Purpose |
+|---|---|
+| `PORT` | HTTP port; defaults to `4000` locally. Hosting platforms provide this automatically. |
+| `NODE_ENV` | Set to `production` on the hosted service. |
+| `SESSION_SECRET` | Unique random secret of at least 32 characters in production. |
+| `DATABASE_PATH` | SQLite database file path. |
+| `UPLOAD_DIR` | Directory for uploaded applicant documents. |
+| `MAX_UPLOAD_MB` | Maximum upload size in MB; defaults to `5`. |
 
+Never commit `.env`, production secrets, the live SQLite database or private applicant uploads.
 
-## Student account registration (updated)
-Student accounts can be created with any syntactically valid email address; Gmail-only restrictions and email OTP verification are not used. The mobile number must contain exactly 10 digits and begin with 6, 7, 8 or 9. Registration immediately creates the student session and opens the admission application. Passwords must be at least 8 characters and include uppercase, lowercase and a number. Email format validation does not prove mailbox ownership, and phone format validation does not prove number ownership.
+## Deployment
 
-## Programme catalogue and fee configuration (updated)
+**Live deployment:** [https://iem-admission-portal-1.onrender.com/](https://iem-admission-portal-1.onrender.com/)
 
-The programme catalogue is seeded from `dataset/programs.csv` and includes the published IEM programme families and streams: B.Tech (including CSE, AI, AI & ML, Data Science, IoT, Cyber Security, CSBS, IT, ECE, EE/EEE, Mechanical Engineering and Biotechnology), BBA, BCA, MBA specialisations, MCA, M.Tech specialisations, and Ph.D. research-area categories. Exact intake, eligibility, campus availability and entrance requirements must be confirmed against the current IEM admission notice.
+The deployed application is hosted on Render. The service should use the repository's `swe` directory as its **Root Directory**.
 
-Each programme has three fee components in `dataset/fee_structure.csv`: Tuition Fee (Per Semester), Admission Fee (One-time), and Examination Fee (Per Semester). New fee amounts are intentionally seeded as zero placeholders and display as “To be configured” until an administrator enters the current approved amounts under Admin → Fees. Re-running the launcher preserves administrator-entered fee amounts.
+Suggested Render settings:
 
-The student application academic section includes an entrance-examination field (IEMJEE, IEM Entrance Exam, WBJEE, JEE Main, CAT, MAT, WBJEMAT or Other). The local public home page remains accessible while a student or administrator is signed in; use “Local Home Page” in the portal sidebar to return to it without signing out.
+| Setting | Value |
+|---|---|
+| Runtime | Node |
+| Root Directory | `swe` |
+| Build Command | `npm install` |
+| Start Command | `npm start` |
+| Health check | Configure to a route that returns HTTP 200 in the current server implementation |
 
-## Homepage, student application and entrance exam flow (latest update)
+### Persistent storage is required
 
-- Fresh visits to `http://localhost:4000/` always render the public IEM homepage, even when a valid session cookie exists. The dashboard is opened only through the Student Portal/Admin Login routes.
-- `Student Portal` opens the portal chooser. `Apply Now` opens the portal chooser for signed-out users and staff; an authenticated applicant goes directly to their application.
-- New student registration creates the account immediately and routes the applicant to the application form. Any syntactically valid email address is accepted; no Gmail-only restriction or email OTP is required. Student login routes to the applicant dashboard.
-- Admin login remains separate; student accounts cannot receive staff access through public registration.
-- The homepage includes a campus photo carousel (5-second rotation), IEM/UEM logo assets from the official IEM-UEM Dean website, and a direct IEMJEE/IEMCET registration link to https://exam.iem.edu.in/.
-- The application academic-details step includes IEMJEE / IEM Entrance Exam and other examination choices.
+The application writes its SQLite database and applicant uploads to the filesystem. Render's default instance filesystem is ephemeral. Attach a persistent disk and configure both paths under its mount directory, for example:
 
+```env
+NODE_ENV=production
+DATABASE_PATH=/var/data/iem.sqlite
+UPLOAD_DIR=/var/data/uploads
+SESSION_SECRET=<unique-random-secret-of-at-least-32-characters>
+```
 
-## Reliability updates (November 2026)
+Use a persistent disk mounted at `/var/data`. Create a backup and migrate any existing local `iem.sqlite` database and required upload files before switching real applicants to the hosted service. Do not assume a Git push automatically transfers local database records.
 
-- Header, footer and hero institutional marks are bundled under `public/assets/` and no longer depend on third-party logo hotlinks.
-- Five supplied campus photographs are bundled locally under `public/assets/` and the carousel does not depend on external image hosts.
-- Registration accepts any syntactically valid email address, requires a 10-digit Indian mobile number beginning 6–9, and a password of at least 8 characters containing uppercase, lowercase and a number.
-- Mobile validation checks only the requested format: exactly 10 digits beginning with 6–9. It does not attempt to identify fake numbers or verify ownership.
-- Email OTP verification is disabled by design; account creation does not depend on SMTP configuration.
-- The IEMJEE/IEMCET navigation includes a login-gated link to the official exam portal and an exam-format/preparation summary.
+### Production launch checklist
+- [ ] Confirm the live URL opens over HTTPS.
+- [ ] Set a unique production `SESSION_SECRET`.
+- [ ] Attach persistent storage for the SQLite database and uploads.
+- [ ] Back up and migrate the intended database and upload files.
+- [ ] Confirm the first authorised administrator account is provisioned securely.
+- [ ] Test student registration, sign-in, draft saving, uploads and final submission.
+- [ ] Test admin sign-in, role restrictions and application review.
+- [ ] Verify that one student cannot access another student's application or documents.
+- [ ] Configure backups, retention and recovery procedures.
+- [ ] Review privacy notice, data-protection requirements and institutional approval before accepting real applicant data.
 
-For 2027 exam dates, eligibility and the authoritative current pattern, always use https://exam.iem.edu.in/ and its current prospectus. The programme-specific preparation guidance and IEMJEE online pattern shown in the site are transcribed from the official exam page.
+## Automated checks
 
-### Bundled campus photography
+Run the test suite from the `swe` directory:
 
-The homepage carousel uses five locally bundled WebP photographs in `public/assets/` (`campus-1.webp` through `campus-5.webp`). They are served by the local Express static server and do not depend on third-party image hosts or external image URLs. The order is IEM Gurukul, IEM Ashram, IEM Management House, UEM Jaipur and UEM Kolkata. Institutional logo artwork is also referenced from local `public/assets/` files.
+```bash
+npm test
+```
+
+The repository includes tests for portal behaviour and locally bundled campus assets. Passing automated tests does not replace a live browser test of the hosted service, email/SMS integrations, data persistence or security controls.
+
+## Data, privacy and operational notes
+
+- Demo/sample dataset entries are not verified live admission records.
+- Confirm current programme availability, eligibility, intake, fee amounts, examination dates and faculty information with IEM before relying on them for official admissions.
+- Registration validates email syntax but does not verify mailbox ownership.
+- Mobile validation checks number format only; it does not verify phone ownership.
+- Do not use demo credentials in production.
+- Keep applicant records and uploaded documents private. Restrict access to authorised users and maintain backups.
+- Conduct an independent security and privacy review before processing real applicant information.
+
+## Documentation
+
+Additional project notes and provenance are available in:
+- `docs/official-content-sources.md`
+- `docs/original-implementation-spec.md`
+- `docs/starter-kit-readme.md`
+
+---
+
+**Project:** IEM Admission Portal  
+**Local URL:** <http://localhost:4000/>  
+**Live URL:** [https://iem-admission-portal-1.onrender.com/](https://iem-admission-portal-1.onrender.com/)
