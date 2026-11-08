@@ -1,0 +1,90 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  name      String?
+  role      Role     @default(STUDENT)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  applications Application[]
+}
+
+enum Role {
+  STUDENT
+  ADMIN
+}
+
+model Program {
+  id          Int      @id @default(autoincrement())
+  programId   String   @unique
+  degree      String
+  name        String
+  department  String
+  duration    String
+  eligibility String?
+  feeInfo     String?
+  intake      Int?
+  applications Application[]
+}
+
+model Application {
+  id          Int      @id @default(autoincrement())
+  applicantId Int
+  programId   Int
+  status      String   @default("DRAFT")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  documents   Document[]
+  applicant   User     @relation(fields: [applicantId], references: [id])
+  program     Program  @relation(fields: [programId], references: [id])
+}
+
+model Document {
+  id            Int      @id @default(autoincrement())
+  applicationId Int
+  filename      String
+  path          String
+  uploadedAt    DateTime @default(now())
+  application   Application @relation(fields: [applicationId], references: [id])
+}
+
+model Faculty {
+  id          Int      @id @default(autoincrement())
+  name        String
+  department  String
+  photoUrl    String?
+  designation String?
+}
+
+model Event {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?
+  date        DateTime
+  imageUrl    String?
+}
+
+model FeeStructure {
+  id          Int      @id @default(autoincrement())
+  programId   Int
+  description String
+  amount      Float
+  program     Program @relation(fields: [programId], references: [id])
+}
+
+model PasswordReset {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @unique
+  token     String   @unique
+  expiresAt DateTime
+  user      User     @relation(fields: [userId], references: [id])
+}

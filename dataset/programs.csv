@@ -1,0 +1,39 @@
+program_id,degree,program_name,department,duration,eligibility_demo,entrance_exam,sample_intake,active
+PRG001,B.Tech,Computer Science & Engineering,Engineering & Technology,4 years,Eligibility and current availability: confirm with IEM admissions,IEMJEE / applicable counselling,0,1
+PRG002,B.Tech,Computer Science & Engineering (Artificial Intelligence),Engineering & Technology,4 years,Eligibility and current availability: confirm with IEM admissions,IEMJEE / applicable counselling,0,1
+PRG003,B.Tech,Computer Science & Engineering (Artificial Intelligence & Machine Learning),Engineering & Technology,4 years,Eligibility and current availability: confirm with IEM admissions,IEMJEE / applicable counselling,0,1
+PRG004,B.Tech,Computer Science & Engineering (Data Science),Engineering & Technology,4 years,Eligibility and current availability: confirm with IEM admissions,IEMJEE / applicable counselling,0,1
+PRG005,B.Tech,Computer Science & Engineering (Artificial Intelligence & Data Science),Engineering & Technology,4 years,Eligibility and current availability: confirm with IEM admissions,IEMJEE / applicable counselling,0,1
+PRG006,B.Tech,Computer Science & Engineering (Internet of Things),Engineering & Technology,4 years,Eligibility and current availability: confirm with IEM admissions,IEMJEE / applicable counselling,0,1
+PRG007,B.Tech,"Computer Science & Engineering (IoT, Cyber Security & Blockchain Technology)",Engineering & Technology,4 years,Eligibility and current availability: confirm with IEM admissions,IEMJEE / applicable counselling,0,1
+PRG008,B.Tech,Computer Science & Engineering (Cyber Security),Engineering & Technology,4 years,Eligibility and current availability: confirm with IEM admissions,IEMJEE / applicable counselling,0,1
+PRG009,B.Tech,Computer Science & Business Systems,Engineering & Technology,4 years,Eligibility and current availability: confirm with IEM admissions,IEMJEE / applicable counselling,0,1
+PRG010,B.Tech,Information Technology,Engineering & Technology,4 years,Eligibility and current availability: confirm with IEM admissions,IEMJEE / applicable counselling,0,1
+PRG011,B.Tech,Electronics & Communication Engineering,Engineering & Technology,4 years,Eligibility and current availability: confirm with IEM admissions,IEMJEE / applicable counselling,0,1
+PRG012,B.Tech,Electrical Engineering,Engineering & Technology,4 years,Eligibility and current availability: confirm with IEM admissions,IEMJEE / applicable counselling,0,1
+PRG013,B.Tech,Electrical & Electronics Engineering,Engineering & Technology,4 years,Eligibility and current availability: confirm with IEM admissions,IEMJEE / applicable counselling,0,1
+PRG014,B.Tech,Mechanical Engineering,Engineering & Technology,4 years,Eligibility and current availability: confirm with IEM admissions,IEMJEE / applicable counselling,0,1
+PRG015,B.Tech,Biotechnology,Engineering & Technology,4 years,Eligibility and current availability: confirm with IEM admissions,IEMJEE / applicable counselling,0,1
+PRG016,BBA,Business Administration,Management,4 years,Eligibility and current availability: confirm with IEM admissions,IEMCET / IEMJEE (confirm current cycle),0,1
+PRG017,BBA,Business Administration (Business Analytics),Management,4 years,Eligibility and current availability: confirm with IEM admissions,IEMCET / IEMJEE (confirm current cycle),0,1
+PRG018,BCA,Computer Applications,Computer Applications,4 years,Eligibility and current availability: confirm with IEM admissions,IEMCET / IEMJEE (confirm current cycle),0,1
+PRG019,M.Tech,Computer Science & Engineering,Engineering & Technology,2 years,Eligibility and current availability: confirm with IEM admissions,IEMCET / PGET (confirm current cycle),0,1
+PRG020,M.Tech,Computer Science & Engineering (Artificial Intelligence & Machine Learning),Engineering & Technology,2 years,Eligibility and current availability: confirm with IEM admissions,IEMCET / PGET (confirm current cycle),0,1
+PRG021,M.Tech,Electronics & Communication Engineering,Engineering & Technology,2 years,Eligibility and current availability: confirm with IEM admissions,IEMCET / PGET (confirm current cycle),0,1
+PRG022,M.Tech,Computer Science & Business Systems,Engineering & Technology,2 years,Eligibility and current availability: confirm with IEM admissions,IEMCET / PGET (confirm current cycle),0,1
+PRG023,MBA,Master of Business Administration,Management,2 years,Eligibility and current availability: confirm with IEM admissions,CAT / MAT / WBJEMAT / institute process (confirm),0,1
+PRG024,MBA,MBA (General Management),Management,2 years,Eligibility and current availability: confirm with IEM admissions,CAT / MAT / WBJEMAT / institute process (confirm),0,1
+PRG025,MBA,MBA – Marketing,Management,2 years,Eligibility and current availability: confirm with IEM admissions,CAT / MAT / WBJEMAT / institute process (confirm),0,1
+PRG026,MBA,MBA – Finance,Management,2 years,Eligibility and current availability: confirm with IEM admissions,CAT / MAT / WBJEMAT / institute process (confirm),0,1
+PRG027,MBA,MBA – Human Resource Management,Management,2 years,Eligibility and current availability: confirm with IEM admissions,CAT / MAT / WBJEMAT / institute process (confirm),0,1
+PRG028,MBA,MBA – Technology Management,Management,2 years,Eligibility and current availability: confirm with IEM admissions,CAT / MAT / WBJEMAT / institute process (confirm),0,1
+PRG029,MBA,MBA – Operations & Supply Chain Management,Management,2 years,Eligibility and current availability: confirm with IEM admissions,CAT / MAT / WBJEMAT / institute process (confirm),0,1
+PRG030,MBA,MBA – Entrepreneurship & Family Business,Management,2 years,Eligibility and current availability: confirm with IEM admissions,CAT / MAT / WBJEMAT / institute process (confirm),0,1
+PRG031,MCA,Master of Computer Applications,Computer Applications,2 years,Eligibility and current availability: confirm with IEM admissions,IEMCET / applicable entrance (confirm),0,1
+PRG032,Ph.D.,Ph.D. – Computer Science & Engineering,Doctoral Research,Minimum 3 years; subject to regulations,Eligibility and current availability: confirm with IEM admissions,Research entrance test / interview (confirm current notice),0,1
+PRG033,Ph.D.,Ph.D. – Information Technology,Doctoral Research,Minimum 3 years; subject to regulations,Eligibility and current availability: confirm with IEM admissions,Research entrance test / interview (confirm current notice),0,1
+PRG034,Ph.D.,Ph.D. – Electronics & Communication Engineering,Doctoral Research,Minimum 3 years; subject to regulations,Eligibility and current availability: confirm with IEM admissions,Research entrance test / interview (confirm current notice),0,1
+PRG035,Ph.D.,Ph.D. – Electrical Engineering,Doctoral Research,Minimum 3 years; subject to regulations,Eligibility and current availability: confirm with IEM admissions,Research entrance test / interview (confirm current notice),0,1
+PRG036,Ph.D.,Ph.D. – Mechanical Engineering,Doctoral Research,Minimum 3 years; subject to regulations,Eligibility and current availability: confirm with IEM admissions,Research entrance test / interview (confirm current notice),0,1
+PRG037,Ph.D.,Ph.D. – Management,Doctoral Research,Minimum 3 years; subject to regulations,Eligibility and current availability: confirm with IEM admissions,Research entrance test / interview (confirm current notice),0,1
+PRG038,Ph.D.,Ph.D. – Applied Sciences,Doctoral Research,Minimum 3 years; subject to regulations,Eligibility and current availability: confirm with IEM admissions,Research entrance test / interview (confirm current notice),0,1

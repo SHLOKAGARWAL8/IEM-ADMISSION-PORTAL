@@ -1,0 +1,6 @@
+application_id,email_demo,applicant_name_demo,degree_preference,program_preference,status_demo,submitted_date_demo,data_note
+APP-DEMO-1001,demo.applicant1@example.test,Aarav Demo,B.Tech,Computer Science and Engineering,Submitted,2026-10-20,SYNTHETIC - not a real person
+APP-DEMO-1002,demo.applicant2@example.test,Mira Example,BBA,Business Administration,Under Review,2026-10-22,SYNTHETIC - not a real person
+APP-DEMO-1003,demo.applicant3@example.test,Kabir Sample,B.Tech,Electronics and Communication Engineering,Documents Required,2026-10-25,SYNTHETIC - not a real person
+APP-DEMO-1004,demo.applicant4@example.test,Riya Example,MCA,Computer Applications,Verified,2026-10-27,SYNTHETIC - not a real person
+APP-DEMO-1005,demo.applicant5@example.test,Dev Sample,MBA,Business Administration,Waitlisted,2026-10-29,SYNTHETIC - not a real person

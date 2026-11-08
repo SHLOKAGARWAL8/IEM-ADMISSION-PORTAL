@@ -1,0 +1,5 @@
+event_id,title,category,event_date_demo,description_demo,image_filename,data_note
+EVT001,Annual Cultural Fest,Cultural,2027-02-15,A sample campus cultural celebration description.,event-placeholder-1.jpg,SYNTHETIC DEMO - replace dates and details
+EVT002,Technical Innovation Week,Technical,2027-03-10,A sample showcase for student projects and workshops.,event-placeholder-2.jpg,SYNTHETIC DEMO - replace dates and details
+EVT003,Sports Meet,Sports,2027-01-20,A sample inter-department sports event.,event-placeholder-3.jpg,SYNTHETIC DEMO - replace dates and details
+EVT004,Entrepreneurship Summit,Academic,2027-04-05,A sample event for startup ideas and industry talks.,event-placeholder-4.jpg,SYNTHETIC DEMO - replace dates and details

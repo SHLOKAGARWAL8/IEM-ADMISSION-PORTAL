@@ -1,0 +1,60 @@
+{
+  "dataset_notice": "All people, application records, fees, events, and sample statistics in this starter kit are synthetic placeholders. They are not official IEM data.",
+  "college_profile": {
+    "name": "Institute of Engineering & Management (IEM)",
+    "tagline_demo": "Learn. Build. Lead.",
+    "overview": "Replace this text with verified institutional history, mission, vision, accreditations, campuses, and official links.",
+    "logo_path": "/uploads/site/college-logo.svg",
+    "hero_image_path": "/uploads/gallery/campus-hero.jpg",
+    "contact_email": "Replace with verified official contact",
+    "contact_phone": "Replace with verified official contact",
+    "official_fees_note": "All fee values must be confirmed from current official notices before publication."
+  },
+  "photo_slots": [
+    {
+      "slot": "hero_campus",
+      "label": "Campus hero image",
+      "recommended_ratio": "16:9",
+      "alt_text_required": true
+    },
+    {
+      "slot": "campus_gallery_1",
+      "label": "Campus gallery photo",
+      "recommended_ratio": "4:3",
+      "alt_text_required": true
+    },
+    {
+      "slot": "faculty_profile",
+      "label": "Faculty portrait",
+      "recommended_ratio": "1:1",
+      "alt_text_required": true
+    },
+    {
+      "slot": "fest_cover",
+      "label": "Fest/event cover image",
+      "recommended_ratio": "16:9",
+      "alt_text_required": true
+    },
+    {
+      "slot": "lab_facility",
+      "label": "Laboratory/facility photo",
+      "recommended_ratio": "4:3",
+      "alt_text_required": true
+    }
+  ],
+  "navigation": [
+    "Home",
+    "About IEM",
+    "Programs",
+    "Faculty",
+    "Fees & Scholarships",
+    "Campus Life",
+    "Fests & Events",
+    "Placements",
+    "News",
+    "FAQs",
+    "Contact",
+    "Apply Now"
+  ],
+  "important_notice": "Do not publish invented accreditation, placement, faculty, fees, deadlines, or admission eligibility as factual."
+}

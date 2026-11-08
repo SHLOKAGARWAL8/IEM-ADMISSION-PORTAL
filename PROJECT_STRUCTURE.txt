@@ -1,0 +1,6 @@
+IEM College Admission Portal
+
+All project files are contained in this swe/ directory.
+Runtime folders data/ and uploads/ are created/used by the application.
+Do not commit database files, uploaded applicant documents, node_modules, or secrets.
+Use START-IEM.ps1 in this folder for the one-command Windows setup and launch.

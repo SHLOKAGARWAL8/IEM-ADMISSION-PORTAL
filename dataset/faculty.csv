@@ -1,0 +1,4 @@
+faculty_id,name,designation,department,qualifications_demo,research_interests_demo,photo_filename,data_note
+FAC001,Dr. Sample Faculty One,Professor,Computer Science and Engineering,Ph.D. in Computer Science (sample profile),Machine Learning; Data Systems,faculty-placeholder-1.jpg,SYNTHETIC DEMO - replace with verified profile
+FAC002,Dr. Sample Faculty Two,Associate Professor,Electronics and Communication Engineering,Ph.D. in Electronics (sample profile),Embedded Systems; Signal Processing,faculty-placeholder-2.jpg,SYNTHETIC DEMO - replace with verified profile
+FAC003,Ms. Sample Faculty Three,Assistant Professor,Management,MBA/Ph.D. (sample profile),Entrepreneurship; Strategy,faculty-placeholder-3.jpg,SYNTHETIC DEMO - replace with verified profile
