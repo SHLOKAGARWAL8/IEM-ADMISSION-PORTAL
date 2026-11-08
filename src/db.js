@@ -22,11 +22,7 @@ const programColumns=db.prepare('PRAGMA table_info(programs)').all().map(c=>c.na
 if(!programColumns.includes('entrance_exam')) db.exec('ALTER TABLE programs ADD COLUMN entrance_exam TEXT');
 const userColumns=db.prepare('PRAGMA table_info(users)').all().map(c=>c.name);
 if(!userColumns.includes('email_verified')) db.exec('ALTER TABLE users ADD COLUMN email_verified INTEGER NOT NULL DEFAULT 0');
-db.exec(`CREATE TABLE IF NOT EXISTS email_verifications(
- user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
- code_hash TEXT NOT NULL, expires_at INTEGER NOT NULL, attempts INTEGER NOT NULL DEFAULT 0,
- created_at INTEGER NOT NULL
-);`);
+db.exec("UPDATE users SET email_verified=1 WHERE email_verified=0");
 
 export const audit=(actor,action,entity,id,details='')=>db.prepare('INSERT INTO audit_logs(actor_id,action,entity,entity_id,details) VALUES(?,?,?,?,?)').run(actor,action,entity,String(id??''),details);
 export const notify=(user,title,message)=>db.prepare('INSERT INTO notifications(user_id,title,message) VALUES(?,?,?)').run(user,title,message);

@@ -35,3 +35,115 @@
 .footer .brand-logo-fallback,.sidebar .brand-logo-fallback{background:#fff;color:var(--navy)}
 .hero-institution-logo{background:var(--navy)!important;object-fit:contain}
 .hero-logo-fallback{display:inline-grid;place-items:center;width:180px;max-width:42%;height:58px;border-radius:6px;background:var(--navy);color:white;font:800 20px Manrope}
+/* Homepage campus carousel and entrance exam callout */
+.campus-carousel{position:relative;width:100%;height:290px;overflow:hidden;border-radius:20px;border:1px solid #ffffff35;background:#102d4f;box-shadow:0 18px 44px #06182b55}
+.campus-slide{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .8s ease;display:block}
+.campus-slide.active{opacity:1}
+.campus-slide-caption{position:absolute;left:0;right:0;bottom:0;padding:34px 20px 17px;background:linear-gradient(transparent,#071d33df);color:white;font-size:12px;font-weight:800;letter-spacing:.12em}
+.campus-slide-dots{position:absolute;right:18px;bottom:18px;display:flex;gap:7px;z-index:2}
+.campus-slide-dots button{width:8px;height:8px;padding:0;border:0;border-radius:50%;background:#ffffff80;cursor:pointer}
+.campus-slide-dots button.active{background:#f0c66f;transform:scale(1.35)}
+.hero-logo-strip{display:flex;align-items:center;justify-content:center;gap:14px;background:#fff;border-radius:13px;padding:13px;margin-top:12px;min-height:82px}
+.official-logo-tile{height:58px;min-width:150px;display:grid;place-items:center;background:#102d4f;border-radius:8px;padding:5px 12px}
+.hero-institution-logo{height:48px;width:145px;object-fit:contain;background:transparent!important;padding:0!important}
+.logo-divider{color:#aab5c2}
+.brand-logo{background:#102d4f!important;padding:5px;border-radius:8px;object-fit:contain}
+.topbar .brand-logo{width:64px;height:52px}
+.entrance-cta{background:#102d4f;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:30px}
+.entrance-cta .eyebrow{color:#f0c66f}.entrance-cta h2{color:#fff;margin:8px 0}.entrance-cta p{color:#d2dfeb;max-width:720px;line-height:1.7}.entrance-cta-actions{display:flex;flex-direction:column;gap:13px;min-width:260px}.entrance-link{color:#fff;font-size:13px;text-decoration:underline}
+@media(max-width:760px){.campus-carousel{height:220px}.entrance-cta{display:block}.entrance-cta-actions{margin-top:18px}.official-logo-tile{min-width:0;flex:1}.hero-institution-logo{width:100%}}
+
+/* Reliable local identity assets and improved applicant auth layout */
+.brand-logo{width:58px;height:58px;object-fit:contain;background:#fff!important;border-radius:10px;padding:3px!important;flex:0 0 58px}
+.hero-institution-logo{width:150px;height:58px;max-width:100%;object-fit:contain;background:#fff!important;padding:4px!important}
+.official-logo-tile{height:64px;min-width:150px;background:#fff!important;border:1px solid #e2e8f0}
+.campus-slide{object-fit:cover;background:#dce8ed}
+.auth-wrap{min-height:calc(100vh - 80px);padding:42px 18px;display:grid;place-items:start center;background:linear-gradient(135deg,#eef4f8,#f8fafc)}
+.auth-card{width:min(540px,100%);padding:clamp(22px,4vw,38px);margin:8px auto 32px}
+.auth-card form .btn{min-height:48px;white-space:normal}
+.auth-card .check{line-height:1.5}
+.auth-card .field input{min-height:46px;font-size:15px}
+.auth-card .field input:invalid:not(:placeholder-shown){border-color:#c85a5a}
+.auth-card .field input:valid:not(:placeholder-shown){border-color:#3b9270}
+#auth-form .field{margin:15px 0}
+@media(max-width:600px){.auth-card{padding:22px 18px}.hero-logo-strip{gap:8px}.official-logo-tile{min-width:0;flex:1}.hero-institution-logo{width:100%}}
+/* Final admissions-header and applicant-form polish */
+.topbar{gap:18px;padding-left:max(4vw,20px);padding-right:max(4vw,20px)}
+.topbar .brand{flex:0 0 auto;min-width:285px;gap:10px}
+.topbar .brand span{white-space:normal;line-height:1.18;max-width:285px}
+.nav{flex:1;justify-content:center;gap:clamp(10px,1.15vw,20px);min-width:0}
+.nav a,.nav-more summary{white-space:nowrap;font-size:12px}
+.nav-actions{flex:0 0 auto;gap:8px;white-space:nowrap}
+.nav-actions .btn{white-space:nowrap;padding:11px 13px}
+.campus-slide{background:#dce8ed;color:#173a57;font-size:14px}
+.campus-slide.image-fallback{object-fit:cover}
+.auth-wrap{align-items:start;padding-top:42px;padding-bottom:54px}
+.auth-card{width:min(520px,100%)}
+#auth-form .field input{min-height:48px}
+#auth-form .field input:invalid:not(:placeholder-shown){border-color:#c14b4b}
+#auth-form .field input:valid:not(:placeholder-shown){border-color:#18845c}
+@media(max-width:1200px){.topbar .brand{min-width:220px}.topbar .brand span{max-width:220px}.nav{gap:9px}.nav a,.nav-more summary{font-size:11px}.nav-actions .btn{padding:10px 9px;font-size:11px}}
+@media(max-width:760px){.topbar{gap:8px}.topbar .brand{min-width:0}.topbar .brand span{max-width:190px}.nav-actions{margin-left:auto}.nav-actions .staff-login{display:none}}
+
+/* QA correction: compact, aligned navigation and local identity assets */
+.topbar{display:grid;grid-template-columns:minmax(245px,1fr) auto auto;gap:clamp(12px,1.5vw,24px);min-height:76px;height:auto;padding-top:10px;padding-bottom:10px}
+.topbar .brand{min-width:0;max-width:360px}.topbar .brand span{white-space:normal;max-width:270px}.topbar .brand-logo{width:54px;height:54px;flex:0 0 54px;object-fit:contain;background:#fff!important;border:1px solid #e5ebf0}
+.nav{gap:clamp(8px,1vw,16px);justify-content:center}.nav a,.nav-more summary{font-size:12px;white-space:nowrap}.nav-actions{gap:7px}.nav-actions .btn{padding:10px 12px;font-size:12px}
+.campus-slide{object-fit:cover;background:#e5edf1}.campus-slide.image-fallback{object-fit:cover}.hero-institution-logo{background:#fff!important;border-radius:6px;padding:4px!important}.official-logo-tile{background:#fff!important}
+@media(max-width:1100px){.topbar{grid-template-columns:1fr auto;gap:8px}.nav{grid-column:1/-1;grid-row:2;justify-content:center;flex-wrap:wrap}.nav-actions{grid-column:2;grid-row:1}.topbar .brand{grid-column:1;grid-row:1}.nav a,.nav-more summary{font-size:11px}}
+@media(max-width:760px){.topbar{display:flex;flex-wrap:wrap}.nav{order:3;width:100%;overflow-x:auto;justify-content:flex-start;padding:8px 0}.nav-actions{margin-left:auto}.topbar .brand span{max-width:175px}.nav-actions .btn{padding:8px 9px;font-size:11px}}
+
+/* Preserve the previously approved IEM/UEM logo presentation: white image surfaces, distinct marks. */
+.topbar .brand-logo{background:#fff!important;padding:3px!important;border:1px solid #e5ebf0!important;border-radius:8px!important;object-fit:contain}
+.hero-logo-strip .official-logo-tile{background:#fff!important;border:1px solid #e2e8f0!important;box-shadow:none}
+.hero-institution-logo{background:#fff!important;object-fit:contain;padding:4px!important}
+
+/* Applicant-only registration/login refresh. Public homepage and admin styling are intentionally untouched. */
+.student-auth-wrap{min-height:calc(100vh - 76px);padding:38px 20px 58px;background:radial-gradient(circle at 12% 10%,#e2edf6 0,transparent 34%),linear-gradient(135deg,#f4f7fa,#edf3f7);place-items:center}
+.student-auth-card{width:min(980px,100%);max-width:980px;margin:0 auto 20px;padding:0;display:grid;grid-template-columns:.88fr 1.12fr;overflow:hidden;border:1px solid #dce6ee;border-radius:22px;background:#fff;box-shadow:0 24px 70px #173a5617}
+.student-auth-aside{padding:42px 34px;background:linear-gradient(155deg,#102d4f,#174c70);color:#fff;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;min-height:540px}
+.student-auth-mark{display:grid;place-items:center;width:58px;height:58px;border:1px solid #ffffff70;border-radius:15px;background:#ffffff16;color:#fff;font:800 20px Manrope;letter-spacing:.04em;margin-bottom:34px}
+.student-auth-aside .eyebrow{color:#f0c66f;font-size:10px;font-weight:800;letter-spacing:.16em}
+.student-auth-aside h2{color:#fff;font-size:clamp(27px,3vw,36px);line-height:1.16;margin:12px 0}
+.student-auth-aside p{color:#d5e2ec;font-size:13px;line-height:1.8;margin:0;max-width:350px}
+.student-auth-points{display:grid;gap:13px;margin-top:34px;color:#edf5fa;font-size:12px;line-height:1.5}
+.student-auth-form{padding:42px clamp(24px,4vw,52px);align-self:center;min-width:0}
+.student-auth-form h3{font-size:23px;color:#142f4b;margin:18px 0 7px}
+.student-auth-form .muted{font-size:13px;line-height:1.7;margin-bottom:22px}
+.student-auth-form .field{margin:16px 0}
+.student-auth-form .field label{font-size:12px;font-weight:750;color:#344b60;margin-bottom:7px;display:block}
+.student-auth-form .field input{width:100%;min-height:49px;border:1px solid #d7e1e9;border-radius:10px;background:#fbfcfd;padding:12px 14px;font-size:14px;outline:none;transition:border-color .18s,box-shadow .18s}
+.student-auth-form .field input:focus{border-color:#3979a6;box-shadow:0 0 0 3px #3979a61a;background:#fff}
+.student-auth-form .field-hint{display:block;color:#8291a0;font-size:10px;margin-top:6px}
+.student-auth-form .check{font-size:11px;margin:16px 0}
+.student-auth-submit{min-height:50px;border-radius:10px;font-size:14px;font-weight:800}
+.student-auth-switch{text-align:center;font-size:12px;color:#65788a;margin:22px 0 10px}
+.student-auth-switch a,.student-auth-home{color:#1b5a86;font-weight:800;text-decoration:none}
+.student-auth-home{display:block;text-align:center;font-size:11px;margin-top:16px}
+@media(max-width:720px){.student-auth-wrap{padding:22px 13px 38px}.student-auth-card{grid-template-columns:1fr;border-radius:17px}.student-auth-aside{min-height:0;padding:25px 24px}.student-auth-mark{width:44px;height:44px;margin-bottom:17px}.student-auth-aside h2{font-size:25px}.student-auth-points{grid-template-columns:1fr;gap:7px;margin-top:17px}.student-auth-form{padding:27px 22px}.student-auth-form h3{font-size:21px}}
+
+/* Portal selection page: prevent inline-anchor wrapping and clipped CTAs. */
+.portal-access-wrap{padding:clamp(28px,5vw,58px) 18px 64px;place-items:start center}
+.portal-access-card{width:min(920px,100%);max-width:920px;padding:clamp(24px,4vw,42px);border:1px solid #e1e8ef;border-radius:20px;background:#fff;box-shadow:0 18px 48px #102d4f12}
+.portal-access-heading{max-width:760px}
+.portal-access-heading h2{margin:14px 0 10px;font-size:clamp(27px,3.4vw,36px);line-height:1.2;color:#142f4b}
+.portal-access-heading>.muted{font-size:15px;line-height:1.8;margin:0}
+.portal-access-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-top:28px;align-items:stretch}
+.portal-access-option{min-width:0;display:flex;flex-direction:column;align-items:stretch;padding:24px;border:1px solid #e1e8ef;border-radius:16px;background:#fff}
+.portal-access-option h3{margin:12px 0 8px;color:#142f4b;font-size:21px}
+.portal-access-option>p.muted{font-size:14px;line-height:1.7;margin:0 0 20px}
+.portal-access-actions{display:flex;flex-direction:column;gap:10px;margin-top:auto;width:100%}
+.portal-access-actions .btn{display:flex!important;align-items:center;justify-content:center;width:100%;min-height:48px;padding:12px 16px;margin:0!important;white-space:normal;text-align:center;line-height:1.35;overflow-wrap:anywhere;border-radius:9px}
+.portal-access-note{font-size:12px;line-height:1.6;color:#718196;margin:13px 0 0!important}
+.portal-access-footer{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:24px;padding-top:18px;border-top:1px solid #edf1f4;font-size:12px}
+.portal-access-footer a{font-weight:750;color:#1b5a86}
+@media(max-width:680px){.portal-access-wrap{padding:20px 12px 38px}.portal-access-card{padding:22px 17px;border-radius:16px}.portal-access-grid{grid-template-columns:1fr;gap:13px;margin-top:20px}.portal-access-option{padding:20px}.portal-access-footer{align-items:flex-start;flex-direction:column}}
+
+
+/* Exact user-approved IEM and UEM logo artwork: keep complete marks legible on white. */
+.topbar .brand-logo{width:76px!important;height:68px!important;flex:0 0 76px!important;object-fit:contain!important;background:#fff!important;padding:3px!important;border:1px solid #e5ebf0!important;border-radius:7px!important}
+.footer .brand-logo,.sidebar .brand-logo{width:76px!important;height:66px!important;object-fit:contain!important;background:#fff!important;padding:3px!important;border-radius:6px!important}
+.hero-logo-strip{display:flex!important;align-items:center!important;justify-content:center!important;gap:18px!important;background:#fff!important;padding:12px 18px!important;min-height:104px!important}
+.hero-logo-strip .official-logo-tile{height:82px!important;min-width:0!important;flex:1 1 0!important;display:flex!important;align-items:center!important;justify-content:center!important;background:#fff!important;border:1px solid #e2e8f0!important;border-radius:8px!important;padding:5px!important;overflow:hidden!important}
+.hero-logo-strip .hero-institution-logo{display:block!important;width:100%!important;height:72px!important;max-width:100%!important;object-fit:contain!important;background:#fff!important;padding:0!important;border-radius:0!important}
+@media(max-width:760px){.topbar .brand-logo{width:58px!important;height:54px!important;flex-basis:58px!important}.hero-logo-strip{gap:8px!important;padding:8px!important}.hero-logo-strip .official-logo-tile{height:68px!important}.hero-logo-strip .hero-institution-logo{height:58px!important}}

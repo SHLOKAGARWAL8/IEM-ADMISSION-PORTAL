@@ -110,17 +110,8 @@ The public site now has a featured faculty preview and a separate `#faculty-dire
 The Windows launcher now skips `npm install` when dependencies are already present; it only installs or repairs them when required. It no longer deletes `node_modules` or the lockfile on every launch.
 
 
-## Gmail ownership verification
-New registrations accept Gmail addresses (`@gmail.com`) only and require a six-digit one-time code sent to that inbox before a session is created. Codes expire after 10 minutes and are limited to five attempts. Password login is blocked until verification succeeds. The four configured privileged addresses receive their configured roles only after completing the same verification flow.
-
-### Configure Gmail SMTP once
-1. Enable 2-Step Verification on the mailbox that will send portal emails.
-2. Create a Google App Password for that mailbox.
-3. Copy `.env.example` to `.env` (if not already present) and set `SMTP_USER`, `SMTP_PASS`, and optionally `SMTP_FROM`.
-4. Restart the portal. Never commit `.env` or share the App Password.
-
-A Gmail address syntax check alone cannot prove an inbox exists; the OTP confirms mailbox access. The mail sender must be configured before new users can register.
-
+## Student account registration (updated)
+Student accounts can be created with any syntactically valid email address; Gmail-only restrictions and email OTP verification are not used. The mobile number must contain exactly 10 digits and begin with 6, 7, 8 or 9. Registration immediately creates the student session and opens the admission application. Passwords must be at least 8 characters and include uppercase, lowercase and a number. Email format validation does not prove mailbox ownership, and phone format validation does not prove number ownership.
 
 ## Programme catalogue and fee configuration (updated)
 
@@ -129,6 +120,28 @@ The programme catalogue is seeded from `dataset/programs.csv` and includes the p
 Each programme has three fee components in `dataset/fee_structure.csv`: Tuition Fee (Per Semester), Admission Fee (One-time), and Examination Fee (Per Semester). New fee amounts are intentionally seeded as zero placeholders and display as “To be configured” until an administrator enters the current approved amounts under Admin → Fees. Re-running the launcher preserves administrator-entered fee amounts.
 
 The student application academic section includes an entrance-examination field (IEMJEE, IEM Entrance Exam, WBJEE, JEE Main, CAT, MAT, WBJEMAT or Other). The local public home page remains accessible while a student or administrator is signed in; use “Local Home Page” in the portal sidebar to return to it without signing out.
-#   I E M - A D M I S S I O N - P O R T A L  
- #   I E M - A D M I S S I O N - P O R T A L  
- 
+
+## Homepage, student application and entrance exam flow (latest update)
+
+- Fresh visits to `http://localhost:4000/` always render the public IEM homepage, even when a valid session cookie exists. The dashboard is opened only through the Student Portal/Admin Login routes.
+- `Student Portal` opens the portal chooser. `Apply Now` opens the portal chooser for signed-out users and staff; an authenticated applicant goes directly to their application.
+- New student registration creates the account immediately and routes the applicant to the application form. Any syntactically valid email address is accepted; no Gmail-only restriction or email OTP is required. Student login routes to the applicant dashboard.
+- Admin login remains separate; student accounts cannot receive staff access through public registration.
+- The homepage includes a campus photo carousel (5-second rotation), IEM/UEM logo assets from the official IEM-UEM Dean website, and a direct IEMJEE/IEMCET registration link to https://exam.iem.edu.in/.
+- The application academic-details step includes IEMJEE / IEM Entrance Exam and other examination choices.
+
+
+## Reliability updates (November 2026)
+
+- Header, footer and hero institutional marks are bundled under `public/assets/` and no longer depend on third-party logo hotlinks.
+- Five supplied campus photographs are bundled locally under `public/assets/` and the carousel does not depend on external image hosts.
+- Registration accepts any syntactically valid email address, requires a 10-digit Indian mobile number beginning 6–9, and a password of at least 8 characters containing uppercase, lowercase and a number.
+- Mobile validation checks only the requested format: exactly 10 digits beginning with 6–9. It does not attempt to identify fake numbers or verify ownership.
+- Email OTP verification is disabled by design; account creation does not depend on SMTP configuration.
+- The IEMJEE/IEMCET navigation includes a login-gated link to the official exam portal and an exam-format/preparation summary.
+
+For 2027 exam dates, eligibility and the authoritative current pattern, always use https://exam.iem.edu.in/ and its current prospectus. The programme-specific preparation guidance and IEMJEE online pattern shown in the site are transcribed from the official exam page.
+
+### Bundled campus photography
+
+The homepage carousel uses five locally bundled WebP photographs in `public/assets/` (`campus-1.webp` through `campus-5.webp`). They are served by the local Express static server and do not depend on third-party image hosts or external image URLs. The order is IEM Gurukul, IEM Ashram, IEM Management House, UEM Jaipur and UEM Kolkata. Institutional logo artwork is also referenced from local `public/assets/` files.

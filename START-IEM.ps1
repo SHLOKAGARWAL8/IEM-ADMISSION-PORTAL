@@ -11,7 +11,7 @@ $nodeVersion = (node -p "process.versions.node").Trim()
 $nodeMajorMinor = [version]("$($nodeVersion.Split('.')[0]).$($nodeVersion.Split('.')[1])")
 if ($nodeMajorMinor -lt [version]"22.5") { throw "Node.js 22.5 or newer is required. Detected: $nodeVersion" }
 
-$depsReady = (Test-Path ".\node_modules\express") -and (Test-Path ".\node_modules\dotenv") -and (Test-Path ".\node_modules\nodemailer") -and (Test-Path ".\node_modules\better-sqlite3") -eq $false
+$depsReady = (Test-Path ".\node_modules\express") -and (Test-Path ".\node_modules\dotenv") -and (Test-Path ".\node_modules\better-sqlite3") -eq $false
 if (-not $depsReady) {
     Write-Host "`nInstalling / repairing dependencies (only when needed)..." -ForegroundColor Cyan
     npm install
