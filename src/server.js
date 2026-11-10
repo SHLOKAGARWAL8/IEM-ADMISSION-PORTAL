@@ -8,6 +8,25 @@ const isSuperAdmin=user=>user?.email?.toLowerCase()===SUPER_ADMIN_EMAIL;
 const roleBootstrapKey='privileged_roles_bootstrap_v1';
 if(!db.prepare('SELECT key FROM site_content WHERE key=?').get(roleBootstrapKey)){for(const email of PRIVILEGED_EMAILS.keys())db.prepare("UPDATE users SET role='admin' WHERE lower(email)=lower(?)").run(email);db.prepare('INSERT INTO site_content(key,value) VALUES(?,?)').run(roleBootstrapKey,JSON.stringify({completedAt:new Date().toISOString()}));}
 const superAdmin=(req,res,next)=>{if(!isSuperAdmin(req.user))return res.status(403).json({error:'Only the Super Admin can manage administrator access.'});next();}; const PORT=process.env.PORT||4000; const secret=process.env.SESSION_SECRET||'local-demo-secret-change-before-deployment-32chars'; if(process.env.NODE_ENV==='production'&&(!process.env.SESSION_SECRET||process.env.SESSION_SECRET.length<32))throw new Error('Set SESSION_SECRET to a unique random value of at least 32 characters in production.'); const uploadDir=path.resolve(process.env.UPLOAD_DIR||'./uploads'); fs.mkdirSync(uploadDir,{recursive:true}); ensureDemoUsers();
+// One-time super-admin password reset via Render Environment Variables.
+// Set SUPER_ADMIN_RESET_PASSWORD in Render, deploy once, then remove the variable.
+// The database marker ensures this runs only once even if the variable is accidentally retained.
+const superAdminResetMarker='super_admin_password_reset_completed_v1';
+if(process.env.SUPER_ADMIN_RESET_PASSWORD && !db.prepare('SELECT key FROM site_content WHERE key=?').get(superAdminResetMarker)){
+  const resetPassword=String(process.env.SUPER_ADMIN_RESET_PASSWORD);
+  if(resetPassword.length<8||resetPassword.length>72||!/(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])/.test(resetPassword)){
+    throw new Error('SUPER_ADMIN_RESET_PASSWORD must be 8-72 characters and include uppercase, lowercase and a number.');
+  }
+  const superAccount=db.prepare('SELECT id FROM users WHERE lower(email)=lower(?)').get(SUPER_ADMIN_EMAIL);
+  if(!superAccount) throw new Error('Super-admin account was not found; password reset was not applied.');
+  db.transaction(()=>{
+    db.prepare('UPDATE users SET password_hash=? WHERE id=?').run(bcrypt.hashSync(resetPassword,12),superAccount.id);
+    db.prepare('DELETE FROM sessions WHERE user_id=?').run(superAccount.id);
+    db.prepare('INSERT INTO site_content(key,value) VALUES(?,?)').run(superAdminResetMarker,JSON.stringify({completedAt:new Date().toISOString()}));
+    audit(superAccount.id,'SUPER_ADMIN_PASSWORD_RESET','user',superAccount.id,'One-time Render environment reset');
+  })();
+  console.log('One-time super-admin password reset completed. Remove SUPER_ADMIN_RESET_PASSWORD from Render Environment now.');
+}
 app.disable('x-powered-by'); app.use(helmet({contentSecurityPolicy:{directives:{defaultSrc:["'self'"],styleSrc:["'self'","'unsafe-inline'",'https://fonts.googleapis.com'],fontSrc:["'self'",'https://fonts.gstatic.com'],imgSrc:["'self'",'data:','https://dean.iem.edu.in','https://studyriserr.com','https://iemgroup.s3.amazonaws.com','https://daqwpj7vq235r.cloudfront.net','https://media.uem.edu.in','https://res.cloudinary.com'],scriptSrc:["'self'"],connectSrc:["'self'"]}}})); app.use(express.json({limit:'1mb'})); app.use(express.urlencoded({extended:false}));
 const sign=id=>crypto.createHmac('sha256',secret).update(id).digest('hex');
 function auth(req,res,next){const raw=req.headers.cookie?.split(';').map(x=>x.trim()).find(x=>x.startsWith('iem_session='))?.slice(12);if(!raw)return res.status(401).json({error:'Please sign in.'});const [id,sig]=raw.split('.');if(!id||!sig||sig.length!==64||!crypto.timingSafeEqual(Buffer.from(sig),Buffer.from(sign(id))))return res.status(401).json({error:'Session invalid. Sign in again.'});const s=db.prepare('SELECT s.expires_at,u.id,u.name,u.email,u.phone,u.role,u.active FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.id=?').get(id);if(!s||s.expires_at<Date.now()||!s.active){db.prepare('DELETE FROM sessions WHERE id=?').run(id);return res.status(401).json({error:'Session expired. Sign in again.'});}req.user=s;next();}

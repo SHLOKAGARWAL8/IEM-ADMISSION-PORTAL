@@ -236,3 +236,16 @@ Additional project notes and provenance are available in:
 **Project:** IEM Admission Portal  
 **Local URL:** <http://localhost:4000/>  
 **Live URL:** [https://iem-admission-portal-1.onrender.com/](https://iem-admission-portal-1.onrender.com/)
+
+
+## One-time Super Admin password reset (Render Free plan)
+
+If the Super Admin cannot sign in and password-reset email is not configured, use this one-time deployment method. It does not require Render Shell, email configuration, a new Render service, or a new website URL.
+
+1. In Render, open the existing `IEM-ADMISSION-PORTAL-1` service and select **Environment** → **Edit**.
+2. Add `SUPER_ADMIN_RESET_PASSWORD` with a new password (8–72 characters; include uppercase, lowercase, and a number). Do not commit this value to GitHub or share it.
+3. Save changes and let the existing service redeploy. On startup, the server updates the password for `shlokagarwal64@gmail.com` and invalidates that account's existing sessions.
+4. After the deployment is Live, return to Render → Environment and **delete `SUPER_ADMIN_RESET_PASSWORD`**, then save. The database records that this one-time reset has already been applied, so it will not run again.
+5. Sign in at the existing website using `shlokagarwal64@gmail.com` and the new password.
+
+Important: this is a one-time recovery mechanism. The database marker prevents repeated resets. Keep the password private. If the reset variable is invalid or the super-admin account does not exist, the server logs an error and does not change the password.
