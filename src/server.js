@@ -17,13 +17,19 @@ if(process.env.SUPER_ADMIN_RESET_PASSWORD && !db.prepare('SELECT key FROM site_c
   if(resetPassword.length<8||resetPassword.length>72||!/(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])/.test(resetPassword)){
     throw new Error('SUPER_ADMIN_RESET_PASSWORD must be 8-72 characters and include uppercase, lowercase and a number.');
   }
-  const superAccount=db.prepare('SELECT id FROM users WHERE lower(email)=lower(?)').get(SUPER_ADMIN_EMAIL);
-  if(!superAccount) throw new Error('Super-admin account was not found; password reset was not applied.');
+  let superAccount=db.prepare('SELECT id FROM users WHERE lower(email)=lower(?)').get(SUPER_ADMIN_EMAIL);
+  const createdAccount=!superAccount;
   db.transaction(()=>{
-    db.prepare('UPDATE users SET password_hash=? WHERE id=?').run(bcrypt.hashSync(resetPassword,12),superAccount.id);
+    const passwordHash=bcrypt.hashSync(resetPassword,12);
+    if(superAccount){
+      db.prepare("UPDATE users SET password_hash=?,role='admin',active=1,email_verified=1 WHERE id=?").run(passwordHash,superAccount.id);
+    }else{
+      const created=db.prepare("INSERT INTO users(name,email,phone,password_hash,role,active,email_verified) VALUES(?,?,?,?, 'admin',1,1)").run('Portal Super Admin',SUPER_ADMIN_EMAIL,null,passwordHash);
+      superAccount={id:Number(created.lastInsertRowid)};
+    }
     db.prepare('DELETE FROM sessions WHERE user_id=?').run(superAccount.id);
-    db.prepare('INSERT INTO site_content(key,value) VALUES(?,?)').run(superAdminResetMarker,JSON.stringify({completedAt:new Date().toISOString()}));
-    audit(superAccount.id,'SUPER_ADMIN_PASSWORD_RESET','user',superAccount.id,'One-time Render environment reset');
+    db.prepare('INSERT INTO site_content(key,value) VALUES(?,?)').run(superAdminResetMarker,JSON.stringify({completedAt:new Date().toISOString(),email:SUPER_ADMIN_EMAIL,createdAccount}));
+    audit(superAccount.id,'SUPER_ADMIN_PASSWORD_RESET','user',superAccount.id,'One-time Render environment reset/bootstrap');
   })();
   console.log('One-time super-admin password reset completed. Remove SUPER_ADMIN_RESET_PASSWORD from Render Environment now.');
 }

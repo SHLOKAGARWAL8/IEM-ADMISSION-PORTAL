@@ -60,6 +60,11 @@ The portal brings the public-facing IEM information site and admission workflows
 - The existing Gymkhana presentation is retained independently from the academic and admission sections.
 
 
+
+### One-time Super Admin recovery (deployment operator only)
+
+This release includes an optional one-time bootstrap/reset controlled by `SUPER_ADMIN_RESET_PASSWORD`. It targets the configured Super Admin email in `src/server.js`. Set this variable only for a single deployment after confirming the service is connected to the intended persistent database. The application hashes the value with bcrypt, grants the configured account the admin role, invalidates its existing sessions, and records a completion marker in `site_content` so the same reset cannot run again. If the account does not exist, it creates it with no phone number. Once the deployment logs report successful completion, immediately remove `SUPER_ADMIN_RESET_PASSWORD` from Render and redeploy. Do not leave this variable configured. If the deployment fails, remove the variable to restore normal startup and inspect logs before retrying.
+
 ### Forgot Password
 
 Student and Admin/Staff login now include a **Forgot password?** link. Password recovery uses a one-time, 30-minute link sent to the account's registered email address. Reset tokens are stored as SHA-256 hashes, can be used once, and all existing sessions for the account are revoked after a successful password change.
