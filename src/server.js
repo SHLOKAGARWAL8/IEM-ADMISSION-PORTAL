@@ -2,6 +2,21 @@ import 'dotenv/config';
 import express from 'express'; import helmet from 'helmet'; import rateLimit from 'express-rate-limit'; import multer from 'multer'; import bcrypt from 'bcryptjs'; import crypto from 'node:crypto'; import fs from 'node:fs'; import path from 'node:path'; import {fileURLToPath} from 'node:url'; import {z} from 'zod';
 import {db,ensureDemoUsers,audit,notify} from './db.js';
 const __dirname=path.dirname(fileURLToPath(import.meta.url)); const app=express();
+// Production-safe programme bootstrap: Render's persistent SQLite database may
+// predate the programme catalogue. Insert missing catalogue rows from the
+// bundled CSV without overwriting admin edits, visibility flags, or applications.
+function parseCsvLine(line){const out=[];let value='',quoted=false;for(let i=0;i<line.length;i++){const ch=line[i];if(ch==='"'){if(quoted&&line[i+1]==='"'){value+='"';i++;}else quoted=!quoted;}else if(ch===','&&!quoted){out.push(value);value='';}else value+=ch;}out.push(value);return out;}
+function ensureProgrammeCatalogue(){
+  const file=path.join(__dirname,'../dataset/programs.csv');
+  if(!fs.existsSync(file)){console.warn('Programme catalogue CSV not found; existing database programmes retained.');return;}
+  const lines=fs.readFileSync(file,'utf8').replace(/^\uFEFF/,'').trim().split(/\r?\n/);
+  if(lines.length<2)return;
+  const headers=parseCsvLine(lines.shift());
+  const insert=db.prepare('INSERT OR IGNORE INTO programs(id,degree,name,department,duration,eligibility,intake,entrance_exam,active) VALUES(?,?,?,?,?,?,?,?,?)');
+  const add= db.transaction(()=>{let added=0;for(const line of lines){if(!line.trim())continue;const row=Object.fromEntries(headers.map((h,i)=>[h,parseCsvLine(line)[i]??'']));if(!row.program_id||!row.degree||!row.program_name)continue;added+=insert.run(String(row.program_id).slice(0,20),row.degree,row.program_name,row.department||'',row.duration||'',row.eligibility_demo||'',Number(row.sample_intake)||0,row.entrance_exam||'',Number(row.active)===0?0:1).changes;}return added;});
+  const added=add();if(added)console.log(`Programme catalogue bootstrap: added ${added} missing programmes.`);
+}
+ensureProgrammeCatalogue();
 const SUPER_ADMIN_EMAIL='shlokagarwal64@gmail.com';
 const PRIVILEGED_EMAILS=new Map([[SUPER_ADMIN_EMAIL,'admin'],['mmoupiya1806@gmail.com','admin'],['iamsubham019@gmail.com','admin'],['snigdhasaha48@gmail.com','admin']]);
 const isSuperAdmin=user=>user?.email?.toLowerCase()===SUPER_ADMIN_EMAIL;

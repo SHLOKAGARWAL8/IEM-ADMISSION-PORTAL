@@ -254,3 +254,7 @@ If the Super Admin cannot sign in and password-reset email is not configured, us
 5. Sign in at the existing website using `shlokagarwal64@gmail.com` and the new password.
 
 Important: this is a one-time recovery mechanism. The database marker prevents repeated resets. Keep the password private. If the reset variable is invalid or the super-admin account does not exist, the server logs an error and does not change the password.
+
+## Production programme catalogue recovery
+
+At server startup, the application now inserts any missing programme records from `dataset/programs.csv` into the configured SQLite database. This is an additive, non-destructive bootstrap: it does not overwrite existing programme records, admin edits, visibility settings, or application records. The student application dropdown reads active programmes from `/api/public`, so previously empty production databases are populated automatically without running a separate seed command.
