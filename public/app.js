@@ -161,7 +161,7 @@ async function applicantView(view='overview'){const d=await api('/api/applicatio
 function applicationForm(a){
   const personal=a?.personal||{},academic=a?.academic||{},guardian=a?.guardian||{};
   const val=(o,k)=>esc(o[k]??'');
-  const fields=(items,obj)=>items.map(([k,label,type='text',req=true])=>`<div class="field"><label for="app-${k}">${label}${req?' *':''}</label><input id="app-${k}" name="${k}" type="${type}" value="${val(obj,k)}" ${req?'required':''} ${type==='number'?'min="0" max="100" step="0.01"':''}></div>`).join('');
+  const fields=(items,obj)=>items.map(([k,label,type='text',req=true])=>{const yearField=/Year$/i.test(k);const numericAttrs=type==='number'?(yearField?'min="1980" max="2100" step="1" inputmode="numeric"':'min="0" max="100" step="0.01"'):'';return `<div class="field"><label for="app-${k}">${label}${req?' *':''}</label><input id="app-${k}" name="${k}" type="${type}" value="${val(obj,k)}" ${req?'required':''} ${numericAttrs}></div>`}).join('');
   const programs=(publicData?.programs||[]).filter(p=>Number(p.active)!==0);
   const selectedProgram=String(a?.program_id??'');
   return `<div class="dash-heading"><div><h1>Admission application</h1><p class="muted">Complete your personal details, academic qualifications and preferred programme below. You can save a draft and return later.</p></div>${a?statusPill(a.status):'<span class="pill">NEW APPLICATION</span>'}</div>
