@@ -6,6 +6,7 @@ db.transaction=(fn)=>()=>{db.exec('BEGIN IMMEDIATE');try{const result=fn();db.ex
 db.exec(`
 CREATE TABLE IF NOT EXISTS users(id INTEGER PRIMARY KEY,name TEXT NOT NULL,email TEXT UNIQUE NOT NULL COLLATE NOCASE,phone TEXT,password_hash TEXT NOT NULL,role TEXT NOT NULL DEFAULT 'applicant' CHECK(role IN ('applicant','officer','admin')),created_at TEXT DEFAULT CURRENT_TIMESTAMP,active INTEGER DEFAULT 1,email_verified INTEGER NOT NULL DEFAULT 0);
 CREATE TABLE IF NOT EXISTS sessions(id TEXT PRIMARY KEY,user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,expires_at INTEGER NOT NULL);
+CREATE TABLE IF NOT EXISTS password_reset_tokens(id INTEGER PRIMARY KEY,user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,token_hash TEXT UNIQUE NOT NULL,expires_at INTEGER NOT NULL,created_at TEXT DEFAULT CURRENT_TIMESTAMP);
 CREATE TABLE IF NOT EXISTS programs(id TEXT PRIMARY KEY,degree TEXT,name TEXT NOT NULL,department TEXT,duration TEXT,eligibility TEXT,fee_info TEXT,intake INTEGER,active INTEGER DEFAULT 1,email_verified INTEGER NOT NULL DEFAULT 0,entrance_exam TEXT);
 CREATE TABLE IF NOT EXISTS faculty(id TEXT PRIMARY KEY,name TEXT,designation TEXT,department TEXT,qualifications TEXT,research_interests TEXT,photo TEXT,data_note TEXT);
 CREATE TABLE IF NOT EXISTS events(id TEXT PRIMARY KEY,title TEXT,category TEXT,event_date TEXT,description TEXT,image TEXT,data_note TEXT);

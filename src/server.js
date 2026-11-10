@@ -20,6 +20,45 @@ function groupedFeeRows(){const rows=db.prepare("SELECT f.*,p.degree FROM fees f
 function newSession(user,res){const id=crypto.randomBytes(32).toString('hex'),expires=Date.now()+7*86400000;db.prepare('INSERT INTO sessions(id,user_id,expires_at) VALUES(?,?,?)').run(id,user.id,expires);res.setHeader('Set-Cookie',`iem_session=${id}.${sign(id)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=604800${process.env.NODE_ENV==='production'?'; Secure':''}`);}
 app.post('/api/auth/register',loginLimiter,(req,res)=>{const p=registerSchema.safeParse(req.body);if(!p.success)return res.status(400).json({error:p.error.issues[0].message});const r=p.data,normalizedEmail=r.email.trim().toLowerCase();try{const assignedRole='applicant';const info=db.prepare('INSERT INTO users(name,email,phone,password_hash,role,email_verified) VALUES(?,?,?,?,?,1)').run(r.name,normalizedEmail,r.phone,bcrypt.hashSync(r.password,12),assignedRole);const user=db.prepare('SELECT id,name,email,phone,role FROM users WHERE id=?').get(Number(info.lastInsertRowid));newSession(user,res);audit(user.id,'REGISTER','user',user.id);res.status(201).json({user:{id:user.id,name:user.name,email:user.email,phone:user.phone,role:user.role,isSuperAdmin:isSuperAdmin(user)}});}catch(e){if(String(e).includes('UNIQUE'))return res.status(409).json({error:'An account with this email already exists. Please sign in.'});console.error('Registration failed:',e);res.status(500).json({error:'Could not create the account. Please try again.'});}});
 app.post('/api/auth/login',loginLimiter,(req,res)=>{const email=String(req.body.email||'').trim().toLowerCase(),password=String(req.body.password||''),audience=String(req.body.audience||'student');const u=db.prepare('SELECT * FROM users WHERE email=? AND active=1').get(email);if(!u||!bcrypt.compareSync(password,u.password_hash))return res.status(401).json({error:'Email or password is incorrect.'});if(audience==='admin'&&u.role==='applicant')return res.status(403).json({error:'This account is not authorised for staff/admin access. Contact the Super Admin if you require access.'});if(audience!=='admin'&&u.role!=='applicant')return res.status(403).json({error:'This is an authorised staff account. Please use Admin / Staff Login.'});newSession(u,res);audit(u.id,'LOGIN','user',u.id);res.json({user:{id:u.id,name:u.name,email:u.email,phone:u.phone,role:u.role,isSuperAdmin:isSuperAdmin(u)}});});
+const passwordResetLimiter=rateLimit({windowMs:15*60*1000,limit:5,standardHeaders:true,legacyHeaders:false,message:{error:'Too many password reset attempts. Please try again later.'}});
+app.post('/api/auth/forgot-password',passwordResetLimiter,async(req,res)=>{
+  const email=String(req.body.email||'').trim().toLowerCase();
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({error:'Enter a valid email address.'});
+  const generic={message:'If an account exists for that email, a password reset link will be sent.'};
+  if(!process.env.RESEND_API_KEY||!process.env.PASSWORD_RESET_FROM) {
+    console.error('Password reset email is not configured: set RESEND_API_KEY and PASSWORD_RESET_FROM.');
+    return res.status(503).json({error:'Password recovery is temporarily unavailable. Please contact the portal administrator.'});
+  }
+  const account=db.prepare('SELECT id,email,name,active FROM users WHERE email=?').get(email);
+  if(!account||!account.active) return res.json(generic);
+  const rawToken=crypto.randomBytes(32).toString('hex');
+  const tokenHash=crypto.createHash('sha256').update(rawToken).digest('hex');
+  const expiresAt=Date.now()+30*60*1000;
+  db.prepare('DELETE FROM password_reset_tokens WHERE user_id=? OR expires_at<?').run(account.id,Date.now());
+  db.prepare('INSERT INTO password_reset_tokens(user_id,token_hash,expires_at) VALUES(?,?,?)').run(account.id,tokenHash,expiresAt);
+  const baseUrl=String(process.env.APP_BASE_URL||`${req.protocol}://${req.get('host')}`).replace(/\/+$/,'');
+  const resetUrl=`${baseUrl}/#reset-password?token=${encodeURIComponent(rawToken)}`;
+  try {
+    const mail=await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:`Bearer ${process.env.RESEND_API_KEY}`,'Content-Type':'application/json'},body:JSON.stringify({from:process.env.PASSWORD_RESET_FROM,to:[account.email],subject:'Reset your IEM Admission Portal password',html:`<div style="font-family:Arial,sans-serif;line-height:1.6;color:#172b42;max-width:560px;margin:auto"><h2>IEM Admission Portal</h2><p>Hello ${String(account.name||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))},</p><p>We received a request to reset your portal password. This link expires in 30 minutes and can be used once.</p><p><a href="${resetUrl}" style="display:inline-block;background:#174c78;color:#fff;padding:12px 20px;border-radius:6px;text-decoration:none">Reset password</a></p><p>If you did not request this, you can ignore this email.</p></div>`,text:`Reset your IEM Admission Portal password using this one-time link (valid for 30 minutes): ${resetUrl}`})});
+    if(!mail.ok) throw new Error(`Resend returned ${mail.status}`);
+    return res.json(generic);
+  } catch(error) {
+    db.prepare('DELETE FROM password_reset_tokens WHERE token_hash=?').run(tokenHash);
+    console.error('Password reset email delivery failed:',error.message);
+    return res.status(503).json({error:'We could not send the reset email. Please try again later or contact the portal administrator.'});
+  }
+});
+app.post('/api/auth/reset-password',passwordResetLimiter,(req,res)=>{
+  const token=String(req.body.token||''),password=String(req.body.password||'');
+  if(!/^[a-f0-9]{64}$/i.test(token)) return res.status(400).json({error:'This password reset link is invalid or expired. Request a new link.'});
+  if(password.length<8||password.length>72||!/(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])/.test(password)) return res.status(400).json({error:'Password must be at least 8 characters and include uppercase, lowercase and a number.'});
+  const tokenHash=crypto.createHash('sha256').update(token).digest('hex');
+  const record=db.prepare('SELECT id,user_id,expires_at FROM password_reset_tokens WHERE token_hash=?').get(tokenHash);
+  if(!record||record.expires_at<Date.now()) {if(record)db.prepare('DELETE FROM password_reset_tokens WHERE id=?').run(record.id);return res.status(400).json({error:'This password reset link is invalid or expired. Request a new link.'});}
+  const update=db.transaction(()=>{db.prepare('UPDATE users SET password_hash=? WHERE id=?').run(bcrypt.hashSync(password,12),record.user_id);db.prepare('DELETE FROM password_reset_tokens WHERE user_id=?').run(record.user_id);db.prepare('DELETE FROM sessions WHERE user_id=?').run(record.user_id);audit(record.user_id,'PASSWORD_RESET','user',record.user_id);});
+  update();
+  res.json({ok:true,message:'Your password has been updated. Please sign in with your new password.'});
+});
 app.post('/api/auth/logout',auth,(req,res)=>{const id=req.headers.cookie.split(';').map(x=>x.trim()).find(x=>x.startsWith('iem_session='))?.slice(12).split('.')[0];db.prepare('DELETE FROM sessions WHERE id=?').run(id);res.setHeader('Set-Cookie','iem_session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0');res.json({ok:true});});app.get('/api/auth/me',auth,(req,res)=>res.json({user:{id:req.user.id,name:req.user.name,email:req.user.email,phone:req.user.phone,role:req.user.role,isSuperAdmin:isSuperAdmin(req.user)}}));
 app.get('/api/public',(_req,res)=>{const getContent=k=>{const x=db.prepare('SELECT value FROM site_content WHERE key=?').get(k);try{return x?JSON.parse(x.value):null}catch{return null}};const content=db.prepare('SELECT value FROM site_content WHERE key=\'college_profile\'').get();res.json({profile:content?JSON.parse(content.value):{},scholarships:getContent('scholarships'),placements:getContent('placements'),announcements:getContent('announcements'),notice:db.prepare('SELECT value FROM site_content WHERE key=\'dataset_notice\'').get()?.value||'Demo content',programs:db.prepare('SELECT * FROM programs WHERE active=1 ORDER BY degree,name').all(),faculty:db.prepare('SELECT * FROM faculty').all(),events:db.prepare('SELECT * FROM events ORDER BY event_date').all(),fees:groupedFeeRows()});});
 app.post('/api/contact',(req,res)=>{const {name,email,subject,message}=req.body||{};if(!name||!/^\S+@\S+\.\S+$/.test(email||'')||!message||String(message).length>3000)return res.status(400).json({error:'Please provide a valid name, email and message.'});db.prepare('INSERT INTO notifications(user_id,title,message) SELECT id,?,? FROM users WHERE role IN (\'admin\',\'officer\')').run(`Website enquiry: ${String(subject||'General').slice(0,100)}`,`${String(name).slice(0,100)} (${email}): ${String(message).slice(0,3000)}`);res.json({ok:true,message:'Your enquiry has been sent to the admissions team.'});});

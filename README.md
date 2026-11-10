@@ -59,6 +59,21 @@ The portal brings the public-facing IEM information site and admission workflows
 - Separate Gymkhana section for student clubs, communities, events and campus activities.
 - The existing Gymkhana presentation is retained independently from the academic and admission sections.
 
+
+### Forgot Password
+
+Student and Admin/Staff login now include a **Forgot password?** link. Password recovery uses a one-time, 30-minute link sent to the account's registered email address. Reset tokens are stored as SHA-256 hashes, can be used once, and all existing sessions for the account are revoked after a successful password change.
+
+To enable email delivery on Render, create a Resend account, verify a sending domain/address, and add these environment variables to the existing Render web service:
+
+| Variable | Value |
+|---|---|
+| `RESEND_API_KEY` | Your Resend API key (keep it secret; never commit it) |
+| `PASSWORD_RESET_FROM` | A sender address verified in Resend, e.g. `IEM Admissions <admissions@your-domain>` |
+| `APP_BASE_URL` | `https://iem-admission-portal-1.onrender.com` |
+
+After setting the variables, redeploy the same Render service. No new domain, service, route base, or QR code is required. If email delivery is not configured, the recovery form reports that password recovery is temporarily unavailable rather than pretending an email was sent. The reset link expires after 30 minutes.
+
 ## Technology stack
 
 - **Runtime:** Node.js 22.5+
