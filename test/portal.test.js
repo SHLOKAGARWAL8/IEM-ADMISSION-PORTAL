@@ -8,3 +8,11 @@ test('SQLite uses Node built-in module and avoids native compilation',()=>{const
 test('student registration no longer requires Gmail-only email or OTP',()=>{const s=fs.readFileSync(new URL('../src/server.js',import.meta.url),'utf8');const a=fs.readFileSync(new URL('../public/app.js',import.meta.url),'utf8');assert.match(s,/email:z\.string\(\)\.trim\(\)\.email\(\)/);assert.match(s,/phone:z\.string\(\)\.trim\(\)\.regex\(\/\^\[6-9\]\[0-9\]\{9\}\$\//);assert.match(s,/email_verified\) VALUES\(\?,\?,\?,\?,\?,1\)/);assert.doesNotMatch(s,/sendVerification|hashOtp|verification code cannot be sent|Please verify your Gmail address/);assert.doesNotMatch(a,/emailVerifyPage|verify-email-form|resend-otp|@gmail\\\\\.com/);});
 test('student registration form uses normal email and ten-digit phone validation',()=>{const a=fs.readFileSync(new URL('../public/app.js',import.meta.url),'utf8');assert.ok(a.includes('name=\"email\" type=\"email\" required'));assert.ok(a.includes('pattern=\"[6-9][0-9]{9}\" maxlength=\"10\" minlength=\"10\"'));assert.ok(a.includes('Create your student account'));assert.ok(a.includes('No email OTP is required'));});
 test('applicant-only design refresh does not alter public homepage or admin shell',()=>{const a=fs.readFileSync(new URL('../public/app.js',import.meta.url),'utf8');const c=fs.readFileSync(new URL('../public/styles.css',import.meta.url),'utf8');assert.match(a,/student-auth-card/);assert.match(a,/audience==='admin'/);assert.match(c,/\.student-auth-card/);assert.match(c,/\.student-auth-aside/);});
+test('server bootstraps twenty clearly labelled synthetic demo applications idempotently', () => {
+  const server = fs.readFileSync(new URL('../src/server.js', import.meta.url), 'utf8');
+  assert.match(server, /function ensureSyntheticApplications\(\)/);
+  assert.match(server, /DEMO-IEM26-/);
+  assert.match(server, /SYNTHETIC DEMO RECORD/);
+  assert.match(server, /if\(process\.env\.DISABLE_DEMO_APPLICATIONS!=='true'\)ensureSyntheticApplications\(\)/);
+  assert.match(server, /if\(count>=20\)return/);
+});

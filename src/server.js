@@ -23,6 +23,28 @@ const isSuperAdmin=user=>user?.email?.toLowerCase()===SUPER_ADMIN_EMAIL;
 const roleBootstrapKey='privileged_roles_bootstrap_v1';
 if(!db.prepare('SELECT key FROM site_content WHERE key=?').get(roleBootstrapKey)){for(const email of PRIVILEGED_EMAILS.keys())db.prepare("UPDATE users SET role='admin' WHERE lower(email)=lower(?)").run(email);db.prepare('INSERT INTO site_content(key,value) VALUES(?,?)').run(roleBootstrapKey,JSON.stringify({completedAt:new Date().toISOString()}));}
 const superAdmin=(req,res,next)=>{if(!isSuperAdmin(req.user))return res.status(403).json({error:'Only the Super Admin can manage administrator access.'});next();}; const PORT=process.env.PORT||4000; const secret=process.env.SESSION_SECRET||'local-demo-secret-change-before-deployment-32chars'; if(process.env.NODE_ENV==='production'&&(!process.env.SESSION_SECRET||process.env.SESSION_SECRET.length<32))throw new Error('Set SESSION_SECRET to a unique random value of at least 32 characters in production.'); const uploadDir=path.resolve(process.env.UPLOAD_DIR||'./uploads'); fs.mkdirSync(uploadDir,{recursive:true}); ensureDemoUsers();
+// Idempotently add clearly marked synthetic applications for portal QA/demo.
+// These use reserved example.test addresses and random, unusable passwords.
+function ensureSyntheticApplications(){
+  const count=db.prepare("SELECT COUNT(*) AS n FROM applications WHERE application_code LIKE 'DEMO-IEM26-%'").get().n;
+  if(count>=20)return;
+  const programmes=db.prepare('SELECT id,degree,name FROM programs WHERE active=1 ORDER BY id').all();
+  if(!programmes.length){console.warn('Synthetic applications skipped: no active programmes are available.');return;}
+  const names=['Aarav Sharma','Ananya Das','Rohan Mukherjee','Ishita Banerjee','Aditya Roy','Priya Nair','Arjun Sen','Diya Chatterjee','Kabir Gupta','Meera Iyer','Siddharth Bose','Riya Kapoor','Dev Malhotra','Saanvi Ghosh','Ishaan Verma','Aditi Saha','Reyansh Dutta','Tara Menon','Vivaan Jain','Nisha Paul'];
+  const states=['Submitted','Under Review','Documents Required','Verified','Shortlisted','Waitlisted','Approved','Rejected','Submitted','Under Review','Verified','Submitted','Documents Required','Approved','Under Review','Shortlisted','Submitted','Waitlisted','Verified','Submitted'];
+  const boards=['CBSE','CISCE','West Bengal Council of Higher Secondary Education'];
+  const insertUser=db.prepare("INSERT OR IGNORE INTO users(name,email,phone,password_hash,role,email_verified) VALUES(?,?,?,?, 'applicant',1)");
+  const findUser=db.prepare('SELECT id FROM users WHERE email=?');
+  const insertApp=db.prepare('INSERT OR IGNORE INTO applications(application_code,user_id,status,step,personal_json,academic_json,program_id,guardian_json,declaration,submitted_at) VALUES(?,?,?,?,?,?,?,?,1,?)');
+  const history=db.prepare('INSERT INTO status_history(application_id,status,note) VALUES(?,?,?)');
+  const run=db.transaction(()=>{for(let i=0;i<20;i++){
+    const n=names[i],first=n.split(' ')[0],last=n.split(' ').slice(1).join(' '),email=`iem.demo.applicant${String(i+1).padStart(2,'0')}@example.test`,phone=`9${String(100000000+i).slice(-9)}`,prog=programmes[i%programmes.length],code=`DEMO-IEM26-${String(i+1).padStart(4,'0')}`,status=states[i];
+    insertUser.run(n,email,phone,bcrypt.hashSync(crypto.randomBytes(24).toString('hex'),10));const u=findUser.get(email);if(!u)continue;
+    insertApp.run(code,u.id,status,5,JSON.stringify({firstName:first,lastName:last,dob:`200${(i%5)+1}-0${(i%8)+1}-15`,gender:i%2?'Female':'Male',phone,address:`${i+12} Demo Road`,city:'Kolkata',state:'West Bengal',pincode:`7000${String(i).padStart(2,'0')}`,demoRecord:true}),JSON.stringify({tenthBoard:boards[i%boards.length],tenthYear:String(2019+i%4),tenthPercent:String(72+i%25),twelfthBoard:boards[(i+1)%boards.length],twelfthYear:String(2021+i%4),twelfthPercent:String(70+(i*3)%28),demoRecord:true}),prog.id,JSON.stringify({guardianName:`${last} Guardian`,guardianPhone:phone,guardianEmail:`guardian${i+1}@example.test`,demoRecord:true}),`2026-10-${String(10+(i%20)).padStart(2,'0')} 10:00:00`);
+    const a=db.prepare('SELECT id FROM applications WHERE application_code=?').get(code);if(a&&!db.prepare('SELECT id FROM status_history WHERE application_id=? AND status=?').get(a.id,status))history.run(a.id,status,'SYNTHETIC DEMO RECORD — for portal testing only; not a real applicant.');
+  }});run();console.log('Synthetic demo application set ensured (20 records).');
+}
+if(process.env.DISABLE_DEMO_APPLICATIONS!=='true')ensureSyntheticApplications();
 // One-time super-admin password reset via Render Environment Variables.
 // Set SUPER_ADMIN_RESET_PASSWORD in Render, deploy once, then remove the variable.
 // The database marker ensures this runs only once even if the variable is accidentally retained.
