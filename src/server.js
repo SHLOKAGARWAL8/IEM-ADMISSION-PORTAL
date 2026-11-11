@@ -22,7 +22,56 @@ const PRIVILEGED_EMAILS=new Map([[SUPER_ADMIN_EMAIL,'admin'],['mmoupiya1806@gmai
 const isSuperAdmin=user=>user?.email?.toLowerCase()===SUPER_ADMIN_EMAIL;
 const roleBootstrapKey='privileged_roles_bootstrap_v1';
 if(!db.prepare('SELECT key FROM site_content WHERE key=?').get(roleBootstrapKey)){for(const email of PRIVILEGED_EMAILS.keys())db.prepare("UPDATE users SET role='admin' WHERE lower(email)=lower(?)").run(email);db.prepare('INSERT INTO site_content(key,value) VALUES(?,?)').run(roleBootstrapKey,JSON.stringify({completedAt:new Date().toISOString()}));}
-const superAdmin=(req,res,next)=>{if(!isSuperAdmin(req.user))return res.status(403).json({error:'Only the Super Admin can manage administrator access.'});next();}; const PORT=process.env.PORT||4000; const secret=process.env.SESSION_SECRET||'local-demo-secret-change-before-deployment-32chars'; if(process.env.NODE_ENV==='production'&&(!process.env.SESSION_SECRET||process.env.SESSION_SECRET.length<32))throw new Error('Set SESSION_SECRET to a unique random value of at least 32 characters in production.'); const uploadDir=path.resolve(process.env.UPLOAD_DIR||'./uploads'); fs.mkdirSync(uploadDir,{recursive:true}); ensureDemoUsers();
+const superAdmin=(req,res,next)=>{if(!isSuperAdmin(req.user))return res.status(403).json({error:'Only the Super Admin can manage administrator access.'});next();}; const PORT=process.env.PORT||4000; const secret=process.env.SESSION_SECRET||'local-demo-secret-change-before-deployment-32chars'; if(process.env.NODE_ENV==='production'&&(!process.env.SESSION_SECRET||process.env.SESSION_SECRET.length<32))throw new Error('Set SESSION_SECRET to a unique random value of at least 32 characters in production.'); const uploadDir=path.resolve(process.env.UPLOAD_DIR||'./uploads'); fs.mkdirSync(uploadDir,{recursive:true});
+// Durable account mirror: SQLite remains the live auth database, while this CSV
+// backup restores accounts if the local SQLite file is recreated after a deploy.
+// On Render, point ACCOUNT_CSV_PATH and DATABASE_PATH at the same persistent disk.
+const accountCsvPath=path.resolve(process.env.ACCOUNT_CSV_PATH||'./data/accounts.csv');
+fs.mkdirSync(path.dirname(accountCsvPath),{recursive:true});
+const accountCsvHeaders=['id','name','email','phone','password_hash','role','active','email_verified','created_at'];
+const accountCsvCell=value=>{const v=String(value??'');return /[",\r\n]/.test(v)?'"'+v.replaceAll('"','""')+'"':v;};
+function parseCsvRows(source){const rows=[];let row=[],cell='',quoted=false;for(let i=0;i<source.length;i++){const c=source[i];if(quoted){if(c==='"'&&source[i+1]==='"'){cell+='"';i++;}else if(c==='"')quoted=false;else cell+=c;}else if(c==='"')quoted=true;else if(c===','){row.push(cell);cell='';}else if(c==='\n'){row.push(cell.replace(/\r$/,''));if(row.some(x=>x!==''))rows.push(row);row=[];cell='';}else cell+=c;}if(cell!==''||row.length){row.push(cell.replace(/\r$/,''));rows.push(row);}return rows;}
+function persistAccountsCsv(){const users=db.prepare('SELECT id,name,email,phone,password_hash,role,active,email_verified,created_at FROM users ORDER BY id').all();const content=[accountCsvHeaders.join(','),...users.map(u=>accountCsvHeaders.map(k=>accountCsvCell(u[k])).join(','))].join('\n')+'\n';const tmp=accountCsvPath+'.tmp';fs.writeFileSync(tmp,content,{mode:0o600});fs.renameSync(tmp,accountCsvPath);}
+function restoreAccountsFromCsv(){if(!fs.existsSync(accountCsvPath))return;const rows=parseCsvRows(fs.readFileSync(accountCsvPath,'utf8'));if(!rows.length)return;const headers=rows.shift();const idx=Object.fromEntries(headers.map((h,i)=>[h,i]));const insert=db.prepare('INSERT OR IGNORE INTO users(id,name,email,phone,password_hash,role,active,email_verified,created_at) VALUES(?,?,?,?,?,?,?,?,?)');let restored=0;for(const r of rows){const email=String(r[idx.email]||'').trim().toLowerCase(),hash=String(r[idx.password_hash]||'');if(!email||!hash)continue;const result=insert.run(Number(r[idx.id])||null,String(r[idx.name]||'Account'),email,r[idx.phone]||null,hash,['applicant','officer','admin'].includes(r[idx.role])?r[idx.role]:'applicant',r[idx.active]==='0'?0:1,r[idx.email_verified]==='0'?0:1,r[idx.created_at]||new Date().toISOString());restored+=result.changes;}if(restored)console.log(`Account CSV recovery: restored ${restored} student/staff/admin account(s).`);}
+
+// CSV is the recovery layer for every persistent portal record. SQLite remains
+// the fast live store; successful write requests refresh these CSV snapshots.
+// Put DATA_DIR on Render's persistent disk (for example /var/data) to retain
+// these files across deploys/restarts. Uploaded document bytes are embedded in
+// documents.csv so the files can also be reconstructed after a database reset.
+const dataDir=path.resolve(process.env.DATA_DIR||'./data');
+fs.mkdirSync(dataDir,{recursive:true});
+const csvTables=['programs','faculty','events','fees','applications','documents','status_history','notifications','site_content','audit_logs'];
+function persistTableCsv(table){
+  const rows=db.prepare(`SELECT * FROM ${table} ORDER BY rowid`).all();
+  const columns=db.prepare(`PRAGMA table_info(${table})`).all().map(c=>c.name);
+  const headers=table==='documents'?[...columns,'file_base64']:columns;
+  const lines=[headers.map(accountCsvCell).join(',')];
+  for(const row of rows){const values=columns.map(k=>row[k]);if(table==='documents'){const file=path.join(uploadDir,String(row.stored_name||''));values.push(fs.existsSync(file)?fs.readFileSync(file).toString('base64'):'');}lines.push(values.map(accountCsvCell).join(','));}
+  const target=path.join(dataDir,`${table}.csv`),tmp=target+'.tmp';
+  fs.writeFileSync(tmp,lines.join('\r\n')+'\r\n',{mode:0o600});fs.renameSync(tmp,target);
+}
+function restoreTableCsv(table){
+  const file=path.join(dataDir,`${table}.csv`);if(!fs.existsSync(file))return 0;
+  const parsed=parseCsvRows(fs.readFileSync(file,'utf8'));if(parsed.length<2)return 0;
+  const headers=parsed.shift(),columns=db.prepare(`PRAGMA table_info(${table})`).all().map(c=>c.name);
+  const usable=headers.filter(h=>columns.includes(h));if(!usable.length)return 0;
+  const sql=`INSERT OR IGNORE INTO ${table} (${usable.map(c=>`"${c}"`).join(',')}) VALUES (${usable.map(()=>'?').join(',')})`;
+  const insert=db.prepare(sql);let restored=0;
+  for(const row of parsed){const record=Object.fromEntries(headers.map((h,i)=>[h,row[i]??'']));
+    if(table==='documents'&&record.file_base64&&record.stored_name){const safe=path.basename(record.stored_name);if(safe===record.stored_name){const dest=path.join(uploadDir,safe);if(!fs.existsSync(dest))fs.writeFileSync(dest,Buffer.from(record.file_base64,'base64'),{mode:0o600});}}
+    try{restored+=insert.run(...usable.map(k=>record[k]===''?null:record[k])).changes;}catch(error){console.warn(`CSV recovery skipped ${table} row: ${error.message}`);}
+  }
+  if(restored)console.log(`CSV recovery: restored ${restored} ${table} record(s).`);return restored;
+}
+function persistAllCsv(){
+  try{persistAccountsCsv();for(const table of csvTables)persistTableCsv(table);}
+  catch(error){console.error('CSV backup failed:',error.message);}
+}
+restoreAccountsFromCsv();
+// Restore parents before dependent records to satisfy SQLite foreign keys.
+for(const table of ['programs','faculty','events','fees','applications','documents','status_history','notifications','site_content','audit_logs'])restoreTableCsv(table);
+ensureDemoUsers();persistAllCsv();
 // Idempotently add clearly marked synthetic applications for portal QA/demo.
 // These use reserved example.test addresses and random, unusable passwords.
 function ensureSyntheticApplications(){
@@ -45,6 +94,8 @@ function ensureSyntheticApplications(){
   }});run();console.log('Synthetic demo application set ensured (20 records).');
 }
 if(process.env.DISABLE_DEMO_APPLICATIONS!=='true')ensureSyntheticApplications();
+// Include newly seeded demo rows in the initial CSV snapshot.
+persistAllCsv();
 // One-time super-admin password reset via Render Environment Variables.
 // Set SUPER_ADMIN_RESET_PASSWORD in Render, deploy once, then remove the variable.
 // The database marker ensures this runs only once even if the variable is accidentally retained.
@@ -68,8 +119,12 @@ if(process.env.SUPER_ADMIN_RESET_PASSWORD && !db.prepare('SELECT key FROM site_c
     db.prepare('INSERT INTO site_content(key,value) VALUES(?,?)').run(superAdminResetMarker,JSON.stringify({completedAt:new Date().toISOString(),email:SUPER_ADMIN_EMAIL,createdAccount}));
     audit(superAccount.id,'SUPER_ADMIN_PASSWORD_RESET','user',superAccount.id,'One-time Render environment reset/bootstrap');
   })();
+  persistAccountsCsv();
   console.log('One-time super-admin password reset completed. Remove SUPER_ADMIN_RESET_PASSWORD from Render Environment now.');
 }
+// Snapshot CSVs after each successful API mutation. The response finish hook
+// runs after route handlers have committed their synchronous SQLite writes.
+app.use((req,res,next)=>{if(['POST','PUT','PATCH','DELETE'].includes(req.method)){res.once('finish',()=>{if(res.statusCode>=200&&res.statusCode<300)persistAllCsv();});}next();});
 app.disable('x-powered-by'); app.use(helmet({contentSecurityPolicy:{directives:{defaultSrc:["'self'"],styleSrc:["'self'","'unsafe-inline'",'https://fonts.googleapis.com'],fontSrc:["'self'",'https://fonts.gstatic.com'],imgSrc:["'self'",'data:','https://dean.iem.edu.in','https://studyriserr.com','https://iemgroup.s3.amazonaws.com','https://daqwpj7vq235r.cloudfront.net','https://media.uem.edu.in','https://res.cloudinary.com'],scriptSrc:["'self'"],connectSrc:["'self'"]}}})); app.use(express.json({limit:'1mb'})); app.use(express.urlencoded({extended:false}));
 const sign=id=>crypto.createHmac('sha256',secret).update(id).digest('hex');
 function auth(req,res,next){const raw=req.headers.cookie?.split(';').map(x=>x.trim()).find(x=>x.startsWith('iem_session='))?.slice(12);if(!raw)return res.status(401).json({error:'Please sign in.'});const [id,sig]=raw.split('.');if(!id||!sig||sig.length!==64||!crypto.timingSafeEqual(Buffer.from(sig),Buffer.from(sign(id))))return res.status(401).json({error:'Session invalid. Sign in again.'});const s=db.prepare('SELECT s.expires_at,u.id,u.name,u.email,u.phone,u.role,u.active FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.id=?').get(id);if(!s||s.expires_at<Date.now()||!s.active){db.prepare('DELETE FROM sessions WHERE id=?').run(id);return res.status(401).json({error:'Session expired. Sign in again.'});}req.user=s;next();}
@@ -80,7 +135,7 @@ const registerSchema=z.object({name:z.string().trim().min(2).max(100),email:z.st
 function feeGroup(degree){const d=String(degree||'').toLowerCase();if(d.includes('b.tech'))return 'B.Tech';if(d.includes('m.tech'))return 'M.Tech';if(d.includes('mba'))return 'MBA';if(d.includes('bba')||d.includes('bca'))return 'BBA / BCA';if(d.includes('mca'))return 'MCA';if(d.includes('ph.d')||d.includes('phd'))return 'Ph.D.';return degree||'Other';}
 function groupedFeeRows(){const rows=db.prepare("SELECT f.*,p.degree FROM fees f JOIN programs p ON p.id=f.program_id WHERE lower(f.component) IN ('tuition fee','examination fee') ORDER BY p.id").all();const tuition=new Map(),exam=[];for(const r of rows){if(r.component==='Examination Fee')exam.push(r);else if(r.component==='Tuition Fee'){const g=feeGroup(r.degree);if(!tuition.has(g))tuition.set(g,r);}}const schedule={'B.Tech':'1st semester ₹1,40,000; semesters 2–8 ₹1,15,000 each','BBA / BCA':'1st semester ₹70,000; semesters 2–8 ₹60,000 each','M.Tech':'1st semester ₹77,000; semesters 2–4 ₹75,000 each','MBA':'₹1,75,000 each semester (1–4)','MCA':'₹75,000 each semester (1–4)'};const out=[...tuition.entries()].map(([g,r])=>({...r,id:`GROUP:${g}:TUITION`,program_name:g,component:'Tuition Fee',billing_frequency:'Per Semester',fee_schedule:schedule[g]||'Contact admissions for the current approved schedule'}));if(exam.length)out.push({...exam[0],id:'COMMON:EXAMINATION',program_name:'All programmes',component:'Examination Fee',billing_frequency:'Per Semester'});return out;}
 function newSession(user,res){const id=crypto.randomBytes(32).toString('hex'),expires=Date.now()+7*86400000;db.prepare('INSERT INTO sessions(id,user_id,expires_at) VALUES(?,?,?)').run(id,user.id,expires);res.setHeader('Set-Cookie',`iem_session=${id}.${sign(id)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=604800${process.env.NODE_ENV==='production'?'; Secure':''}`);}
-app.post('/api/auth/register',loginLimiter,(req,res)=>{const p=registerSchema.safeParse(req.body);if(!p.success)return res.status(400).json({error:p.error.issues[0].message});const r=p.data,normalizedEmail=r.email.trim().toLowerCase();try{const assignedRole='applicant';const info=db.prepare('INSERT INTO users(name,email,phone,password_hash,role,email_verified) VALUES(?,?,?,?,?,1)').run(r.name,normalizedEmail,r.phone,bcrypt.hashSync(r.password,12),assignedRole);const user=db.prepare('SELECT id,name,email,phone,role FROM users WHERE id=?').get(Number(info.lastInsertRowid));newSession(user,res);audit(user.id,'REGISTER','user',user.id);res.status(201).json({user:{id:user.id,name:user.name,email:user.email,phone:user.phone,role:user.role,isSuperAdmin:isSuperAdmin(user)}});}catch(e){if(String(e).includes('UNIQUE'))return res.status(409).json({error:'An account with this email already exists. Please sign in.'});console.error('Registration failed:',e);res.status(500).json({error:'Could not create the account. Please try again.'});}});
+app.post('/api/auth/register',loginLimiter,(req,res)=>{const p=registerSchema.safeParse(req.body);if(!p.success)return res.status(400).json({error:p.error.issues[0].message});const r=p.data,normalizedEmail=r.email.trim().toLowerCase();try{const assignedRole='applicant';const info=db.prepare('INSERT INTO users(name,email,phone,password_hash,role,email_verified) VALUES(?,?,?,?,?,1)').run(r.name,normalizedEmail,r.phone,bcrypt.hashSync(r.password,12),assignedRole);const user=db.prepare('SELECT id,name,email,phone,role FROM users WHERE id=?').get(Number(info.lastInsertRowid));newSession(user,res);audit(user.id,'REGISTER','user',user.id);persistAccountsCsv();res.status(201).json({user:{id:user.id,name:user.name,email:user.email,phone:user.phone,role:user.role,isSuperAdmin:isSuperAdmin(user)}});}catch(e){if(String(e).includes('UNIQUE'))return res.status(409).json({error:'An account with this email already exists. Please sign in.'});console.error('Registration failed:',e);res.status(500).json({error:'Could not create the account. Please try again.'});}});
 app.post('/api/auth/login',loginLimiter,(req,res)=>{const email=String(req.body.email||'').trim().toLowerCase(),password=String(req.body.password||''),audience=String(req.body.audience||'student');const u=db.prepare('SELECT * FROM users WHERE email=? AND active=1').get(email);if(!u||!bcrypt.compareSync(password,u.password_hash))return res.status(401).json({error:'Email or password is incorrect.'});if(audience==='admin'&&u.role==='applicant')return res.status(403).json({error:'This account is not authorised for staff/admin access. Contact the Super Admin if you require access.'});if(audience!=='admin'&&u.role!=='applicant')return res.status(403).json({error:'This is an authorised staff account. Please use Admin / Staff Login.'});newSession(u,res);audit(u.id,'LOGIN','user',u.id);res.json({user:{id:u.id,name:u.name,email:u.email,phone:u.phone,role:u.role,isSuperAdmin:isSuperAdmin(u)}});});
 const passwordResetLimiter=rateLimit({windowMs:15*60*1000,limit:5,standardHeaders:true,legacyHeaders:false,message:{error:'Too many password reset attempts. Please try again later.'}});
 app.post('/api/auth/forgot-password',passwordResetLimiter,async(req,res)=>{
@@ -119,6 +174,7 @@ app.post('/api/auth/reset-password',passwordResetLimiter,(req,res)=>{
   if(!record||record.expires_at<Date.now()) {if(record)db.prepare('DELETE FROM password_reset_tokens WHERE id=?').run(record.id);return res.status(400).json({error:'This password reset link is invalid or expired. Request a new link.'});}
   const update=db.transaction(()=>{db.prepare('UPDATE users SET password_hash=? WHERE id=?').run(bcrypt.hashSync(password,12),record.user_id);db.prepare('DELETE FROM password_reset_tokens WHERE user_id=?').run(record.user_id);db.prepare('DELETE FROM sessions WHERE user_id=?').run(record.user_id);audit(record.user_id,'PASSWORD_RESET','user',record.user_id);});
   update();
+  persistAccountsCsv();
   res.json({ok:true,message:'Your password has been updated. Please sign in with your new password.'});
 });
 app.post('/api/auth/logout',auth,(req,res)=>{const id=req.headers.cookie.split(';').map(x=>x.trim()).find(x=>x.startsWith('iem_session='))?.slice(12).split('.')[0];db.prepare('DELETE FROM sessions WHERE id=?').run(id);res.setHeader('Set-Cookie','iem_session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0');res.json({ok:true});});app.get('/api/auth/me',auth,(req,res)=>res.json({user:{id:req.user.id,name:req.user.name,email:req.user.email,phone:req.user.phone,role:req.user.role,isSuperAdmin:isSuperAdmin(req.user)}}));
@@ -149,7 +205,7 @@ app.get('/api/admin/programs',auth,staff,(_req,res)=>res.json({programs:db.prepa
 app.post('/api/admin/programs',auth,admin,(req,res)=>{const {id,degree,name,department,duration,eligibility,intake,entrance_exam}=req.body||{};if(!id||!degree||!name)return res.status(400).json({error:'Program ID, degree and name are required.'});try{const pid=String(id).slice(0,20);db.prepare('INSERT INTO programs(id,degree,name,department,duration,eligibility,intake,entrance_exam) VALUES(?,?,?,?,?,?,?,?)').run(pid,degree,name,department||'',duration||'',eligibility||'',Number(intake)||0,entrance_exam||'');const addFee=db.prepare('INSERT OR IGNORE INTO fees(id,program_id,component,amount,billing_frequency,data_note) VALUES(?,?,?,0,?,?)');addFee.run(('F'+pid.slice(0,17)+'T').slice(0,20),pid,'Tuition Fee','Per Semester','ADMIN TO ENTER VERIFIED CURRENT SESSION AMOUNT');addFee.run(('F'+pid.slice(0,17)+'E').slice(0,20),pid,'Examination Fee','Per Semester','COMMON EXAMINATION FEE — ADMIN TO ENTER VERIFIED AMOUNT');audit(req.user.id,'CREATE','program',id);res.status(201).json({ok:true});}catch{return res.status(409).json({error:'Program ID already exists.'});}});
 app.patch('/api/admin/programs/:id',auth,admin,(req,res)=>{const p=db.prepare('SELECT * FROM programs WHERE id=?').get(req.params.id);if(!p)return res.status(404).json({error:'Program not found.'});const {name,eligibility,active,intake}=req.body||{};db.prepare('UPDATE programs SET name=?,eligibility=?,active=?,intake=? WHERE id=?').run(name??p.name,eligibility??p.eligibility,active===undefined?p.active:(active?1:0),intake??p.intake,p.id);audit(req.user.id,'UPDATE','program',p.id);res.json({ok:true});});
 app.get('/api/admin/users',auth,superAdmin,(_req,res)=>res.json({users:db.prepare('SELECT id,name,email,phone,role,active,created_at FROM users ORDER BY id DESC LIMIT 300').all()}));
-app.patch('/api/admin/users/:id',auth,superAdmin,(req,res)=>{const {role,active}=req.body||{};if(role&&!['applicant','officer','admin'].includes(role))return res.status(400).json({error:'Invalid role.'});const target=db.prepare('SELECT id,email,role FROM users WHERE id=?').get(req.params.id);if(!target)return res.status(404).json({error:'User not found.'});if(target.email.toLowerCase()===SUPER_ADMIN_EMAIL)return res.status(403).json({error:'The Super Admin account is protected.'});if(Number(target.id)===Number(req.user.id)&&active===false)return res.status(400).json({error:'You cannot disable your own account.'});db.prepare('UPDATE users SET role=COALESCE(?,role),active=COALESCE(?,active) WHERE id=?').run(role??null,active===undefined?null:(active?1:0),req.params.id);audit(req.user.id,'SUPER_ADMIN_UPDATE_USER','user',req.params.id,JSON.stringify({role:role??target.role,active}));res.json({ok:true});});
+app.patch('/api/admin/users/:id',auth,superAdmin,(req,res)=>{const {role,active}=req.body||{};if(role&&!['applicant','officer','admin'].includes(role))return res.status(400).json({error:'Invalid role.'});const target=db.prepare('SELECT id,email,role FROM users WHERE id=?').get(req.params.id);if(!target)return res.status(404).json({error:'User not found.'});if(target.email.toLowerCase()===SUPER_ADMIN_EMAIL)return res.status(403).json({error:'The Super Admin account is protected.'});if(Number(target.id)===Number(req.user.id)&&active===false)return res.status(400).json({error:'You cannot disable your own account.'});db.prepare('UPDATE users SET role=COALESCE(?,role),active=COALESCE(?,active) WHERE id=?').run(role??null,active===undefined?null:(active?1:0),req.params.id);audit(req.user.id,'SUPER_ADMIN_UPDATE_USER','user',req.params.id,JSON.stringify({role:role??target.role,active}));persistAccountsCsv();res.json({ok:true});});
 // CSV exports for administrators. Passwords and password hashes are deliberately never exported.
 const csvCell=value=>'"'+String(value??'').replaceAll('"','""')+'"';
 app.get('/api/admin/student-accounts.csv',auth,superAdmin,(_req,res)=>{
@@ -165,6 +221,19 @@ app.get('/api/admin/applications.csv',auth,staff,(_req,res)=>{
   res.type('text/csv; charset=utf-8').attachment('iem-all-applications.csv').send('\uFEFF'+lines.join('\r\n'));
 });
 app.get('/api/admin/reports.csv',auth,staff,(req,res)=>{const rows=db.prepare('SELECT a.application_code,u.name,u.email,p.name AS program,a.status,a.created_at,a.submitted_at FROM applications a JOIN users u ON u.id=a.user_id LEFT JOIN programs p ON p.id=a.program_id ORDER BY a.id DESC').all();const esc=v=>'"'+String(v??'').replaceAll('"','""')+'"';res.type('text/csv').attachment('iem-admissions-report.csv').send(['Application ID,Applicant,Email,Program,Status,Created,Submitted',...rows.map(r=>[r.application_code,r.name,r.email,r.program,r.status,r.created_at,r.submitted_at].map(esc).join(','))].join('\n'));});
+// Super Admin-only access to the persisted CSV recovery snapshots. The private
+// accounts.csv is intentionally excluded because it contains password hashes.
+const downloadableSnapshots=new Set(csvTables);
+app.get('/api/admin/csv-backups',auth,superAdmin,(_req,res)=>{
+  const files=[...downloadableSnapshots].map(table=>{const file=path.join(dataDir,`${table}.csv`);if(!fs.existsSync(file))return {table,exists:false};const stat=fs.statSync(file);return {table,exists:true,sizeBytes:stat.size,updatedAt:stat.mtime.toISOString(),downloadUrl:`/api/admin/csv-backups/${table}.csv`};});
+  const accountFileExists=fs.existsSync(accountCsvPath);if(accountFileExists){const stat=fs.statSync(accountCsvPath);files.unshift({table:'accounts',exists:true,sizeBytes:stat.size,updatedAt:stat.mtime.toISOString(),downloadUrl:null,protected:true});}
+  res.json({storageDirectory:dataDir,files});
+});
+app.get('/api/admin/csv-backups/:table.csv',auth,superAdmin,(req,res)=>{
+  const table=String(req.params.table||'');if(!downloadableSnapshots.has(table))return res.status(404).json({error:'CSV backup not found.'});
+  const file=path.join(dataDir,`${table}.csv`);if(!fs.existsSync(file))return res.status(404).json({error:'CSV backup has not been created yet.'});
+  res.type('text/csv; charset=utf-8').attachment(`iem-${table}-backup.csv`).sendFile(file);
+});
 app.get('/api/admin/audit',auth,admin,(_req,res)=>res.json({logs:db.prepare('SELECT a.*,u.name AS actor_name FROM audit_logs a LEFT JOIN users u ON u.id=a.actor_id ORDER BY a.id DESC LIMIT 150').all()}));
 app.use(express.static(path.join(__dirname,'../public')));app.get('*',(_req,res)=>res.sendFile(path.join(__dirname,'../public/index.html')));
 app.use((err,_req,res,_next)=>{console.error(err.message);if(err instanceof multer.MulterError)return res.status(400).json({error:err.code==='LIMIT_FILE_SIZE'?'File exceeds the upload size limit.':err.message});res.status(400).json({error:err.message||'Request could not be processed.'});});

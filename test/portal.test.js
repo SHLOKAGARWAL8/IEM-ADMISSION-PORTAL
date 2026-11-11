@@ -16,3 +16,23 @@ test('server bootstraps twenty clearly labelled synthetic demo applications idem
   assert.match(server, /if\(process\.env\.DISABLE_DEMO_APPLICATIONS!=='true'\)ensureSyntheticApplications\(\)/);
   assert.match(server, /if\(count>=20\)return/);
 });
+
+test('server automatically snapshots and restores application records through CSV files', async () => {
+  const server = fs.readFileSync(new URL('../src/server.js', import.meta.url), 'utf8');
+  for (const table of ['applications','documents','status_history','notifications','site_content','audit_logs']) {
+    assert.ok(server.includes(`'${table}'`), `CSV persistence includes ${table}`);
+  }
+  assert.match(server, /function persistAllCsv\(\)/);
+  assert.match(server, /function restoreTableCsv\(table\)/);
+  assert.match(server, /res\.once\('finish'/);
+  assert.match(server, /file_base64/);
+  assert.match(server, /DATA_DIR/);
+});
+test('CSV recovery snapshots are viewable by Super Admin without exposing password hashes', () => {
+  const server = fs.readFileSync(new URL('../src/server.js', import.meta.url), 'utf8');
+  assert.match(server, /app\.get\('\/api\/admin\/csv-backups',auth,superAdmin/);
+  assert.match(server, /app\.get\('\/api\/admin\/csv-backups\/:table\.csv',auth,superAdmin/);
+  assert.match(server, /const downloadableSnapshots=new Set\(csvTables\)/);
+  assert.match(server, /accounts\.csv/);
+  assert.match(server, /protected:true/);
+});

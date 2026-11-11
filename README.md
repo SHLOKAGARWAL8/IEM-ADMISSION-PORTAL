@@ -186,11 +186,13 @@ Suggested Render settings:
 
 ### Persistent storage is required
 
-The application writes its SQLite database and applicant uploads to the filesystem. Render's default instance filesystem is ephemeral. Attach a persistent disk and configure both paths under its mount directory, for example:
+The application writes its SQLite database, applicant uploads, and automatic CSV recovery snapshots to the filesystem. Render's default instance filesystem is ephemeral. Attach a persistent disk and configure all writable data paths under its mount directory, for example:
 
 ```env
 NODE_ENV=production
+DATA_DIR=/var/data
 DATABASE_PATH=/var/data/iem.sqlite
+ACCOUNT_CSV_PATH=/var/data/accounts.csv
 UPLOAD_DIR=/var/data/uploads
 SESSION_SECRET=<unique-random-secret-of-at-least-32-characters>
 ```
@@ -261,3 +263,21 @@ At server startup, the application now inserts any missing programme records fro
 
 ### Synthetic application records for QA
 On server startup, the portal idempotently ensures a set of 20 synthetic admission applications is present for demonstration and QA. Their application IDs begin with `DEMO-IEM26-`, their email addresses use the reserved `example.test` domain, and their records are labelled as synthetic in the application history and admin list. They are not real applicants and their randomly generated passwords are not usable for sign-in. To disable this automatic demo-data bootstrap, set `DISABLE_DEMO_APPLICATIONS=true` in the environment. The student tracker uses five milestones worth 20% each: personal information, academic details, programme selection, required documents (pro-rated across three uploads), and final submission.
+
+
+## Persistent student and admin accounts (Render)
+
+SQLite remains the live database, and the server automatically rewrites CSV snapshots after every successful POST, PUT, PATCH, or DELETE request. Snapshots include student/staff/admin accounts, programmes, faculty, events, fees, applications, uploaded document contents, application status history, notifications, site content, and audit logs. At startup, the server restores missing records from those CSV files in foreign-key-safe order. `documents.csv` also carries uploaded file bytes in Base64 so document files can be reconstructed if the upload folder is lost. The account CSV contains bcrypt password hashes (never plaintext passwords). All runtime CSVs are private data and are deliberately excluded from Git.
+The Super Admin can inspect the CSV snapshot inventory after signing in by opening `/api/admin/csv-backups`; this reports each snapshot's size and last-write time and provides download links for application, document, status, notification, programme, faculty, fee, content and audit CSVs. The `accounts.csv` file is listed as protected and is never downloadable because it contains password hashes.
+
+
+**Required for persistence across Render deploys/restarts:** attach a Render Persistent Disk to this web service, mount it at `/var/data`, then set these Render Environment Variables:
+
+```text
+DATA_DIR=/var/data
+DATABASE_PATH=/var/data/iem.sqlite
+ACCOUNT_CSV_PATH=/var/data/accounts.csv
+UPLOAD_DIR=/var/data/uploads
+```
+
+Deploy after setting the disk and variables. The disk must be attached to this same Render web service and mounted at `/var/data`. A CSV stored in the application source directory alone is not durable on Render's ephemeral filesystem. The CSV system is a recovery mirror, not a substitute for the persistent disk: without that disk, Render can discard both SQLite and CSV files during a restart or deploy. Do not commit real account CSV data to GitHub. Students sign in using the same Gmail address and password they used at registration. Admin/staff accounts use the same login credentials through the Admin / Staff Login route; account role determines access.
